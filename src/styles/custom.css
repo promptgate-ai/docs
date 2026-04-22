@@ -1,0 +1,7 @@
+/* PromptGate Docs — Light theme customization */
+:root {
+  --sl-color-accent-low: #e8f5d6;
+  --sl-color-accent: #ace74d;
+  --sl-color-accent-high: #3d5a0f;
+  --sl-font: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+}

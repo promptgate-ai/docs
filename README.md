@@ -1,52 +1,49 @@
-# PromptGate Documentation
+# Starlight Starter Kit: Basics
 
-Official documentation for **PromptGate — AI Gateway Platform**.
-
-Built with [Astro Starlight](https://starlight.astro.build/) — available at [docs.promptgate.dev](https://docs.promptgate.dev).
-
-## Development
-
-```bash
-npm install
-npm run dev
-```
-
-## Build
-
-```bash
-npm run build
-```
-
-## Structure
+[![Built with Starlight](https://astro.badg.es/v2/built-with-starlight/tiny.svg)](https://starlight.astro.build)
 
 ```
-src/content/docs/
-├── getting-started/
-│   ├── installation.md
-│   ├── quick-start.md
-│   └── configuration.md
-├── features/
-│   ├── ai-gateway.md
-│   ├── ai-wrapper.md
-│   ├── api-gateway.md
-│   ├── mcp-bridge.md
-│   ├── provider-packages.md
-│   ├── tokens.md
-│   ├── credentials.md
-│   └── audit.md
-├── plugins/
-│   ├── overview.md
-│   ├── marketplace.md
-│   └── developing-plugins.md
-├── api/
-│   └── reference.md
-└── changelog.md
+npm create astro@latest -- --template starlight
 ```
 
-## Contributing
+> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
 
-Documentation is maintained alongside feature development. Every new feature must include its documentation page before merge.
+## 🚀 Project Structure
 
----
+Inside of your Astro + Starlight project, you'll see the following folders and files:
 
-**Akyros Labs LLC** — hello@akyroslabs.com
+```
+.
+├── public/
+├── src/
+│   ├── assets/
+│   ├── content/
+│   │   └── docs/
+│   └── content.config.ts
+├── astro.config.mjs
+├── package.json
+└── tsconfig.json
+```
+
+Starlight looks for `.md` or `.mdx` files in the `src/content/docs/` directory. Each file is exposed as a route based on its file name.
+
+Images can be added to `src/assets/` and embedded in Markdown with a relative link.
+
+Static assets, like favicons, can be placed in the `public/` directory.
+
+## 🧞 Commands
+
+All commands are run from the root of the project, from a terminal:
+
+| Command                   | Action                                           |
+| :------------------------ | :----------------------------------------------- |
+| `npm install`             | Installs dependencies                            |
+| `npm run dev`             | Starts local dev server at `localhost:4321`      |
+| `npm run build`           | Build your production site to `./dist/`          |
+| `npm run preview`         | Preview your build locally, before deploying     |
+| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
+| `npm run astro -- --help` | Get help using the Astro CLI                     |
+
+## 👀 Want to learn more?
+
+Check out [Starlight’s docs](https://starlight.astro.build/), read [the Astro documentation](https://docs.astro.build), or jump into the [Astro Discord server](https://astro.build/chat).
