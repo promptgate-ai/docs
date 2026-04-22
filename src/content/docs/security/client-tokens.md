@@ -1,17 +1,13 @@
 ---
-title: Client Tokens
-description: API authentication tokens
+title: API Tokens
+description: API authentication tokens for PromptGate endpoints
 ---
 
-:::note
-Client tokens are under active development and not yet available. This page describes the planned functionality.
-:::
-
-Client tokens are API keys that external applications use to authenticate with PromptGate endpoints. They replace the need to share provider API keys with callers.
+API tokens are Bearer tokens that external applications use to authenticate with PromptGate endpoints. They replace the need to share provider API keys with callers.
 
 ## Token format
 
-PromptGate client tokens use a prefixed format that makes them easy to identify and scan for in logs or code:
+PromptGate API tokens use a prefixed format that makes them easy to identify and scan for in logs or code:
 
 | Prefix | Environment | Example |
 |---|---|---|
@@ -20,11 +16,21 @@ PromptGate client tokens use a prefixed format that makes them easy to identify 
 
 The prefix tells you at a glance whether a token is for production or testing, which helps prevent accidental misuse.
 
+## Creating a token
+
+1. Navigate to **Security → API Tokens** in the sidebar (within your active project)
+2. Enter a descriptive **Name** (e.g., `Mobile App Production`)
+3. Select **Environment** — Live (`pg_live_`) or Test (`pg_test_`)
+4. Click **Generate**
+5. **Copy the token immediately** — it will not be shown again
+
+The dashboard shows a yellow banner with the token and a copy button right after creation. Once you navigate away, the plaintext token is gone forever.
+
 ## Security
 
 ### Hashing
 
-Client tokens are **SHA-256 hashed** before storage. PromptGate stores only the hash — the plaintext token is shown once at creation and cannot be retrieved afterward.
+API tokens are **SHA-256 hashed** before storage. PromptGate stores only the hash — the plaintext token is shown once at creation and cannot be retrieved afterward.
 
 This means:
 
@@ -32,37 +38,15 @@ This means:
 - Tokens cannot be exported or viewed after creation
 - Lost tokens must be revoked and replaced
 
-### Scoping
+### Project scoping
 
-Each client token can be scoped to control what it can access:
+Each API token is scoped to a single project. A token for Project A cannot access endpoints in Project B. This is enforced at the middleware level — the token resolves to a project before any endpoint lookup.
 
-- **Project scope** — Limit the token to a specific project
-- **Endpoint scope** — Limit the token to specific endpoints within a project
-- **Permission scope** — Read-only, execute-only, or full access
+## Revoking a token
 
-### Expiration
+Click **Revoke** next to any active token in the dashboard. Revoked tokens are immediately rejected on all subsequent requests. Revocation is instant and cannot be undone — create a new token if needed.
 
-Tokens can be configured with an expiration date. Expired tokens are automatically rejected. For long-lived integrations, use non-expiring tokens with regular manual rotation.
-
-## Planned workflow
-
-### Creating a token
-
-1. Navigate to **Client Tokens** in the sidebar (within your active project)
-2. Click **Create Token**
-3. Configure:
-   - **Name** — Descriptive label (e.g., `Mobile App Production`)
-   - **Environment** — Production (`pg_live_`) or Testing (`pg_test_`)
-   - **Scopes** — Which endpoints or resources the token can access
-   - **Expiration** — Optional expiration date
-4. Click **Create**
-5. **Copy the token immediately** — it will not be shown again
-
-### Revoking a token
-
-Revoked tokens are immediately rejected on all subsequent requests. Revocation is instant and cannot be undone — create a new token if needed.
-
-### Usage
+## Usage
 
 Include the token in the `Authorization` header:
 
@@ -70,5 +54,11 @@ Include the token in the `Authorization` header:
 curl -X POST https://gateway.example.com/api/v1/endpoints/summarize \
   -H "Authorization: Bearer pg_live_a1b2c3d4e5f6..." \
   -H "Content-Type: application/json" \
-  -d '{"input": "Summarize this text..."}'
+  -d '{"message": "Summarize this text..."}'
 ```
+
+The gateway validates the token, resolves the project, finds the endpoint by slug, and routes to the configured AI provider.
+
+## Token tracking
+
+Each token tracks its `last_used_at` timestamp, visible in the dashboard. This helps identify unused tokens for cleanup.

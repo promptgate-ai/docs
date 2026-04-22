@@ -15,22 +15,78 @@ https://gateway.example.com/api/v1/
 
 ## Authentication
 
-API requests are authenticated using Bearer tokens. Include your client token in the `Authorization` header:
+API requests are authenticated using Bearer tokens. Include your API token in the `Authorization` header:
 
 ```bash
 curl -H "Authorization: Bearer pg_live_..." \
      https://gateway.example.com/api/v1/endpoints/summarize
 ```
 
+Tokens use the `pg_live_` prefix for production and `pg_test_` for test environments. Generate tokens in the dashboard under **Security → API Tokens**.
+
 See [Client Tokens](/security/client-tokens/) for details on creating and managing tokens.
 
-:::note
-API authentication via client tokens is under active development. Detailed endpoint documentation will be published as each API surface becomes available.
-:::
+## Chat Completions
+
+Send messages to an AI endpoint and receive a completion.
+
+### Via endpoint slug
+
+```bash
+curl -X POST https://gateway.example.com/api/v1/endpoints/summarize \
+  -H "Authorization: Bearer pg_live_..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "Explain quantum computing in one paragraph."
+  }'
+```
+
+Or with full message history:
+
+```bash
+curl -X POST https://gateway.example.com/api/v1/endpoints/summarize \
+  -H "Authorization: Bearer pg_live_..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "messages": [
+      {"role": "user", "content": "Explain quantum computing in one paragraph."}
+    ]
+  }'
+```
+
+### Via chat/completions route
+
+```bash
+curl -X POST https://gateway.example.com/api/v1/chat/completions \
+  -H "Authorization: Bearer pg_live_..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "endpoint": "summarize",
+    "messages": [
+      {"role": "user", "content": "Explain quantum computing in one paragraph."}
+    ]
+  }'
+```
+
+### Streaming
+
+Add `"stream": true` to receive Server-Sent Events (SSE):
+
+```bash
+curl -X POST https://gateway.example.com/api/v1/endpoints/summarize \
+  -H "Authorization: Bearer pg_live_..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "Write a short poem.",
+    "stream": true
+  }'
+```
+
+The response is an SSE stream with OpenAI-compatible `data:` chunks, ending with `data: [DONE]`.
 
 ## Response format
 
-All API responses follow a consistent JSON structure.
+All non-streaming API responses follow a consistent JSON structure.
 
 **Successful response:**
 
@@ -38,12 +94,19 @@ All API responses follow a consistent JSON structure.
 {
   "ok": true,
   "data": {
-    "id": "ep_a1b2c3d4",
-    "name": "Summarizer",
-    "status": "active"
+    "id": "chatcmpl-abc123",
+    "content": "Quantum computing uses quantum bits...",
+    "model": "gpt-4o-mini",
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 14,
+      "completion_tokens": 82,
+      "total_tokens": 96
+    }
   },
   "meta": {
-    "request_id": "req_x9y8z7w6v5u4"
+    "endpoint": "summarize",
+    "provider": "gpt-4o-mini"
   }
 }
 ```
@@ -53,16 +116,7 @@ All API responses follow a consistent JSON structure.
 ```json
 {
   "ok": false,
-  "error": {
-    "code": "validation_error",
-    "message": "The input field is required.",
-    "details": {
-      "input": ["The input field is required."]
-    }
-  },
-  "meta": {
-    "request_id": "req_x9y8z7w6v5u4"
-  }
+  "error": "Endpoint 'unknown' not found or inactive."
 }
 ```
 
@@ -72,28 +126,34 @@ All API responses follow a consistent JSON structure.
 |---|---|---|
 | `ok` | boolean | `true` for success, `false` for errors |
 | `data` | object | The response payload (success only) |
-| `error` | object | Error details (error only) |
-| `error.code` | string | Machine-readable error code |
-| `error.message` | string | Human-readable error description |
-| `error.details` | object | Field-level validation errors (when applicable) |
+| `data.content` | string | The AI-generated text |
+| `data.model` | string | Model that produced the response |
+| `data.usage` | object | Token usage counts |
+| `error` | string | Error message (error only) |
 | `meta` | object | Request metadata |
-| `meta.request_id` | string | Unique identifier for the request, useful for debugging and support |
+
+## Supported providers
+
+| Provider | Key | Example models |
+|---|---|---|
+| OpenAI | `openai` | gpt-4o, gpt-4o-mini, gpt-4-turbo |
+| Anthropic | `anthropic` | claude-sonnet-4-20250514, claude-haiku-4-5-20251001 |
+| Google Gemini | `google` | gemini-2.0-flash, gemini-pro |
+
+## Failover
+
+When an endpoint has a failover chain configured, the gateway automatically tries the next provider if the primary fails (timeout, 5xx, rate limit). Failover entries inherit runtime settings (temperature, top_p, max_tokens) from the primary endpoint.
 
 ## HTTP status codes
 
 | Code | Meaning |
 |---|---|
 | `200` | Success |
-| `201` | Resource created |
-| `400` | Bad request — invalid input |
 | `401` | Unauthorized — missing or invalid token |
-| `403` | Forbidden — token lacks required scope |
-| `404` | Not found |
-| `422` | Validation error — check `error.details` |
-| `429` | Rate limited — too many requests |
-| `500` | Internal server error |
+| `404` | Endpoint not found or inactive |
+| `422` | Validation error |
+| `429` | Rate limited |
 | `502` | Upstream provider error |
-| `504` | Upstream provider timeout |
 
 ## Rate limiting
 
@@ -106,16 +166,3 @@ X-RateLimit-Reset: 1700000000
 ```
 
 When the rate limit is exceeded, the API returns a `429` status code with a `Retry-After` header.
-
-## Planned API surfaces
-
-The following API surfaces are planned or in development:
-
-| Surface | Prefix | Description |
-|---|---|---|
-| Endpoint invocation | `/api/v1/endpoints/{slug}` | Call AI endpoints |
-| Chat completions | `/api/v1/wrapper/chat/completions` | OpenAI-compatible chat API |
-| Resource management | `/api/v1/projects/`, `/api/v1/credentials/`, etc. | CRUD operations on gateway resources |
-| MCP server | `/api/v1/mcp/{project-slug}` | MCP tool discovery and invocation |
-
-Detailed endpoint documentation for each surface will be published as they become available.
