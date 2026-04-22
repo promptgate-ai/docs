@@ -1,0 +1,41 @@
+<?php return array(
+    'root' => array(
+        'name' => '__root__',
+        'pretty_version' => 'dev-main',
+        'version' => 'dev-main',
+        'reference' => 'b3add4d33b360865380c5c221e558a2f10d10cc1',
+        'type' => 'library',
+        'install_path' => __DIR__ . '/../../',
+        'aliases' => array(),
+        'dev' => true,
+    ),
+    'versions' => array(
+        '__root__' => array(
+            'pretty_version' => 'dev-main',
+            'version' => 'dev-main',
+            'reference' => 'b3add4d33b360865380c5c221e558a2f10d10cc1',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../../',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
+        'justinrainbow/json-schema' => array(
+            'pretty_version' => '6.8.0',
+            'version' => '6.8.0.0',
+            'reference' => '89ac92bcfe5d0a8a4433c7b89d394553ae7250cc',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../justinrainbow/json-schema',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
+        'marc-mabe/php-enum' => array(
+            'pretty_version' => 'v4.7.2',
+            'version' => '4.7.2.0',
+            'reference' => 'bb426fcdd65c60fb3638ef741e8782508fda7eef',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../marc-mabe/php-enum',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
+    ),
+);

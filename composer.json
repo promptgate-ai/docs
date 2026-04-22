@@ -1,0 +1,5 @@
+{
+    "require": {
+        "justinrainbow/json-schema": "^6.8"
+    }
+}
