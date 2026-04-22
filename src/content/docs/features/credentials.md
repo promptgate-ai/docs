@@ -24,7 +24,7 @@ The full API key is shown **once** — at the moment you create the credential. 
 
 ## Creating a credential
 
-1. Navigate to **Credentials** in the sidebar (within your active project)
+1. Navigate to **Credentials** in the sidebar under **ADMIN**
 2. Click **Create Credential**
 3. Fill in the details:
    - **Provider** — Select the AI provider (e.g., OpenAI, Anthropic, Google, Mistral)
@@ -67,7 +67,7 @@ Deleting a credential permanently removes it from the database. The encrypted ke
 - **Encryption at rest** — All keys are AES-256-GCM encrypted in the database. A database breach alone does not expose plaintext keys.
 - **APP_KEY dependency** — Decryption requires the `APP_KEY`. Protect this value and back it up securely. If the `APP_KEY` is lost, all encrypted credentials become unrecoverable.
 - **No key export** — There is no feature to export or reveal a stored key. This is by design.
-- **Project scoping** — Credentials are scoped to a project. A credential in Project A cannot be used by endpoints in Project B.
+- **Global scope** — Credentials are global and available to all projects. Any endpoint can reference any active credential.
 - **Audit trail** — Credential creation and deactivation events are recorded in the audit log. *(Coming soon)*
 
 ## Best practices

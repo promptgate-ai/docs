@@ -47,7 +47,7 @@ The project is created and you are taken to its dashboard.
 
 ## Project switcher
 
-The project switcher in the top navigation bar shows your currently active project and lets you switch between projects. All resources displayed in the sidebar (credentials, templates, endpoints) are scoped to the active project.
+The project switcher in the sidebar shows your currently active project and lets you switch between projects. Endpoints are scoped to the active project. Credentials and Provider Templates are global (available under ADMIN).
 
 Click the project name in the navigation bar to open the switcher, then select a different project. The page refreshes to show resources for the selected project.
 
@@ -69,8 +69,8 @@ Resources belong to a project and are isolated from other projects by default:
 
 | Resource | Scoping |
 |---|---|
-| Credentials | Always project-scoped |
-| Provider Templates | Project-scoped or global (configurable) |
+| Credentials | Global (available to all projects) |
+| Provider Templates | Global (available to all projects) |
 | Endpoints | Always project-scoped |
 | Client Tokens | Always project-scoped |
 
