@@ -1,60 +1,80 @@
 ---
 title: AI Endpoints
-description: Fixed-prompt AI execution points
+description: Fixed-prompt AI execution points with provider routing
 ---
 
-:::note
-AI Endpoints are under active development and not yet available. This page describes the planned functionality.
+AI Endpoints are the core building block of the AI Gateway. Each endpoint defines a fixed system prompt, a provider configuration, and runtime settings. Your application sends user input to the endpoint URL; PromptGate injects the system prompt, calls the AI provider, and returns the result.
+
+## Creating an Endpoint
+
+Navigate to your project → **AI Endpoints** → **New endpoint**. The wizard has 6 steps:
+
+### 1. Core
+
+- **Endpoint Name** — displayed in dashboards and logs
+- **Slug** — auto-generated from the name, used in the API URL
+- **Expose as MCP tool** — when enabled, AI agents can discover this endpoint via the MCP Bridge
+
+The endpoint URL will be: `POST /api/v1/{project-slug}/{endpoint-slug}`
+
+### 2. Provider & Runtime
+
+Choose how the endpoint connects to an AI provider:
+
+**Use Provider Template** — select a pre-configured template that bundles provider + model + settings. All template values are applied automatically.
+
+**Configure manually** — pick each setting individually:
+- **Provider Key** — which AI provider to use (OpenAI, Anthropic, etc.)
+- **Provider Credential** — the API key to authenticate with (filtered by provider)
+- **Provider Model** — which model to call (e.g. `gpt-4o-mini`)
+
+**Failover** — add backup provider + model + credential combinations. If the primary fails, PromptGate automatically tries the next in the list.
+
+**Temperature** — controls randomness (0 = deterministic, 2 = creative)
+
+**Top P** — nucleus sampling threshold (0–1)
+
+### 3. Limits
+
+- **Max Output Tokens** — cap per response (slider, 1–16000)
+- **Request Token Limit** — approximate max input tokens
+- **Monthly Budget USD** — hard cap, endpoint returns 403 when reached
+- **Cost per 1K Tokens** — used for cost estimates
+
+### 4. Streaming
+
+Enable Server-Sent Events (SSE) for real-time token delivery. When enabled, responses are streamed as they are generated instead of waiting for the full response.
+
+### 5. Session
+
+Enable server-side conversation state across multiple requests:
+
+- **Session TTL** — auto-expire idle sessions (seconds)
+- **Max Messages** — rolling message window
+- **Max Tokens** — optional total token cap per session
+
+Clients pass a `session_id` in the request; PromptGate stores message history server-side.
+
+### 6. Prompt & Schema
+
+- **Prompt** — the system message prepended to every request
+- **Input Schema** — optional JSON schema to validate request bodies
+- **Output Schema** — optional JSON schema to validate model responses
+
+:::tip
+Use `{{input}}` in the prompt to inject the user's message at a specific location.
 :::
 
-AI Endpoints are the core feature of AI Gateway projects. Each endpoint is a callable URL that binds a fixed system prompt, a provider template, and access controls into a single execution point.
+## Endpoint List
 
-## Concept
+The endpoint index page shows all endpoints for the current project with:
+- Name and slug
+- Provider or template
+- Active/inactive status
+- Actions (deactivate)
 
-Unlike a generic chat API where the caller provides the full prompt, PromptGate endpoints lock down the system prompt on the server side. The caller only provides the user input. This gives you:
+## Template vs Manual
 
-- **Prompt security** — System prompts cannot be modified or extracted by callers
-- **Consistent behavior** — Every call to the endpoint uses the same instructions
-- **Simplified client integration** — Callers send input, get output; no prompt engineering required
+When using a **Provider Template**, the endpoint inherits the template's provider, model, and default settings. You can still override individual settings on the endpoint.
 
-## Planned features
-
-### Fixed system prompts
-
-Each endpoint has a system prompt defined by the administrator. The prompt is stored on the server and injected into every request. Callers cannot see or modify it.
-
-```
-Caller sends:  { "input": "Summarize this article: ..." }
-Endpoint adds: System prompt + user input → Provider API
-Caller gets:   { "output": "The article discusses..." }
-```
-
-### Provider routing
-
-Endpoints reference a [provider template](/features/provider-templates/) that determines which provider and model handles the request. Changing the template switches the backing model for all callers without any client-side changes.
-
-### Streaming
-
-Endpoints will support server-sent events (SSE) for streaming responses. Callers can receive tokens as they are generated instead of waiting for the full response.
-
-### Sessions
-
-Optional session support enables multi-turn conversations within an endpoint. PromptGate manages the conversation history server-side, so the caller only sends new messages.
-
-### Budget controls
-
-Set spending limits on a per-endpoint basis:
-
-- **Token budget** — Maximum tokens per request, per hour, or per day
-- **Cost budget** — Maximum dollar spend per endpoint over a time window
-- **Rate limits** — Maximum requests per minute per client token
-
-When a budget is exceeded, the endpoint returns an error instead of forwarding the request.
-
-### Schema validation
-
-Define input and output schemas for your endpoints. PromptGate validates the caller's input against the schema before processing and can enforce structured output from the AI provider.
-
-### MCP Bridge exposure
-
-Endpoints can optionally be exposed as MCP tools. See [MCP Bridge](/features/mcp-bridge/) for details.
+When configuring **manually**, you set everything directly on the endpoint.
