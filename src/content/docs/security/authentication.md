@@ -1,82 +1,116 @@
 ---
 title: Authentication
-description: Login and session management
+description: Web login (single admin) and API authentication (Bearer tokens with scopes).
 ---
 
-PromptGate uses a custom authentication system designed for administrative access. There is no self-registration — all user accounts are created by administrators.
+PromptGate has two distinct auth surfaces that don't intersect:
 
-## Web authentication
+- **Web UI** — session-based login. One admin account in Community Edition.
+- **Public API** — Bearer tokens (`pg_live_…` or `pg_test_…`) with scopes. Per-project.
 
-### Login
+## Web UI login
 
-The web dashboard uses session-based authentication. Navigate to your PromptGate instance and log in with your email and password.
+Navigate to `/login` and submit email + password.
+
+![Login screen — placeholder](#)
+
+### Default credentials (fresh install)
 
 ```
-https://gateway.example.com/login
+Email:    admin@promptgate.dev
+Password: admin
 ```
 
-### Default admin account
-
-On first installation, PromptGate seeds a default admin account:
-
-| Field | Value |
-|---|---|
-| Email | `admin@promptgate.dev` |
-| Password | `admin` |
-
-:::caution
-Change the default admin password immediately after installation. This account has full access to all projects and settings.
-:::
-
-### No self-registration
-
-PromptGate does not include a registration page. This is intentional — it is an internal tool, not a consumer-facing application. User accounts are created through:
-
-- The admin seeder (default account on fresh install)
-- Admin user management *(coming soon)*
-- Artisan commands for creating users
+The seeder creates this account on first migrate. **Change the password immediately** via top-right user menu → **Profile**.
 
 ### Rate limiting
 
-The login endpoint is protected against brute-force attacks:
+The login endpoint is rate-limited to prevent brute-force:
 
-- **5 login attempts** per email address per minute
-- After exceeding the limit, the account is temporarily locked
-- The lockout duration increases with repeated failures
+- **5 attempts** per email per minute.
+- Subsequent attempts return 429 + `Retry-After`.
+- Successful login resets the counter.
 
-Failed login attempts are logged for security auditing.
+Failed attempts are logged in `audit_logs` (event: `auth.login_failed`).
 
-## Session management
+### Sessions
 
-After a successful login, PromptGate creates a server-side session:
+After successful login:
 
-- Sessions are stored according to the `SESSION_DRIVER` configuration (file, Redis, or database)
-- Session lifetime is controlled by Laravel's `SESSION_LIFETIME` setting (default: 120 minutes)
-- Sessions are invalidated on logout
+- Laravel creates a server-side session.
+- Storage driver is `SESSION_DRIVER` (default: `database`; recommend `redis` in prod).
+- Idle lifetime: `SESSION_LIFETIME` (default 120 min).
+- Cookie is `HttpOnly` and `SameSite=Lax`. `Secure` is added when serving over HTTPS.
+- CSRF is enforced on every state-changing form by Laravel's middleware.
 
-:::tip
-For production deployments, use Redis as the session driver for better performance and automatic expiration:
-```env
-SESSION_DRIVER=redis
+### Logout
+
+Top-right user menu → **Logout**. Invalidates the session server-side.
+
+### Forgot password
+
+In Community Edition, there's no password-reset email flow (single user, you typically have console access). To reset:
+
+```bash
+docker compose exec app php artisan tinker
+\App\Models\User::query()->where('email', 'admin@promptgate.dev')
+    ->update(['password' => Hash::make('your-new-password')]);
 ```
-:::
+
+### Single-user vs multi-user
+
+Community Edition is **single-user** — one admin account, full access to everything. The login system technically supports multiple users (the `users` table is normal), but no UI for invitations, no roles, no permissions. **Multi-user / RBAC / SSO** are Cloud Edition features (see **[Editions](/concepts/editions/)**).
 
 ## API authentication
 
-API endpoints use Bearer token authentication with client tokens. See [Client Tokens](/security/client-tokens/) for details on token management.
+Public API routes (`/api/{uuid}/...`, `/api/control/mcp`) use **Bearer tokens**.
 
-```bash
-curl -H "Authorization: Bearer pg_live_..." \
-     https://gateway.example.com/api/v1/endpoints/my-endpoint
+```http
+Authorization: Bearer pg_live_abcdef01234567...
 ```
 
-:::note
-API authentication via client tokens is under active development. The current release supports web session authentication only.
-:::
+Tokens are project-scoped and carry scopes that gate which routes they can hit:
+
+| Scope | Routes |
+|---|---|
+| `chat` | `POST /api/{uuid}/{slug}` (AI Gateway), `POST /api/{uuid}/v1/chat/completions` (Wrapper) |
+| `models` | `GET /api/{uuid}/models` |
+| `admin` | `GET /api/{uuid}/info`, `/endpoints`, `/tokens`, `POST /api/control/mcp` |
+| `proxy` | `ANY /api/{uuid}/proxy/{slug}/{any?}` (API Gateway) |
+| `mcp` | `POST /api/{uuid}/mcp` (Bridge or Gateway) |
+
+A token can have **multiple scopes**. A single token can be e.g. `[chat, models]` for an app that needs both.
+
+Issuing, rotating, and revoking tokens is documented in **[Client Tokens](/security/client-tokens/)**.
+
+## Storage and hashing
+
+| Surface | Storage | What's stored |
+|---|---|---|
+| Web login | Laravel's bcrypt | `users.password` is bcrypt with `BCRYPT_ROUNDS` cost (12 in prod). |
+| API tokens | SHA-256 | `api_tokens.token_hash` is the SHA-256 of the plaintext. Plaintext shown once at create / rotate, never again. |
+
+Web sessions store an opaque session ID server-side. The cookie just carries the session ID; the session payload (user ID, CSRF token, etc.) lives in the session store.
+
+## HTTPS
+
+Behind a reverse proxy that terminates TLS, the Laravel `trustProxies` middleware (set to `'*'` in `bootstrap/app.php`) honours `X-Forwarded-Proto`. PromptGate generates `https://…` URLs in OAuth callbacks, MCP bridge URLs, and curl examples whenever `APP_URL` is `https://…`.
+
+If you don't configure HTTPS, **don't ship a production gateway**. Bearer tokens transit in headers; without TLS, network observers see them.
 
 ## Security recommendations
 
-- **Change the default password** immediately after installation
-- **Use HTTPS** in production — configure a reverse proxy (nginx, Caddy) with TLS or let FrankenPHP handle automatic HTTPS
-- **Set strong session configuration** — use Redis for session storage and keep session lifetimes short for sensitive environments
-- **Monitor failed logins** — check the audit log regularly for unusual login patterns *(coming soon)*
+- **Change the default password** before exposing the gateway anywhere.
+- **HTTPS only** in production.
+- **Redis sessions** in prod for performance and session-store consistency across replicas.
+- **Short `SESSION_LIFETIME`** if the UI is exposed beyond your VPN (e.g. 30 min).
+- **Audit the audit log** weekly — the `auth.login_failed` events are an early signal for brute-force attempts that slipped through rate limits.
+- **Token rotation** — rotate API tokens on a cadence (every 90 days is a fine starting point).
+
+---
+
+Next: **[Client Tokens](/security/client-tokens/)**.
+
+---
+
+> © Akyros Labs LLC. All rights reserved.
