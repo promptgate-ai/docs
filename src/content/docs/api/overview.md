@@ -1,168 +1,106 @@
 ---
 title: API Overview
-description: PromptGate API reference
+description: Inventory of every public API surface PromptGate exposes.
 ---
 
-PromptGate exposes a RESTful JSON API for programmatic access to gateway resources and endpoint invocation.
+PromptGate has **five public API surfaces**, each with its own URL space, scope requirement, and request/response shape:
 
-## Base URL
+| Surface | Path prefix | Scope | Project type |
+|---|---|---|---|
+| **[Gateway API](/api/gateway/)** | `/api/{uuid}/{slug}` <br/> `/api/{uuid}/chat/completions` | `chat` | `ai_gateway` |
+| **[Wrapper API](/api/wrapper/)** | `/api/{uuid}/v1/chat/completions` <br/> `/api/{uuid}/v1/models` | `chat` | `ai_wrapper` |
+| **[Proxy API](/api/proxy/)** | `/api/{uuid}/proxy/{slug}/{any?}` | `proxy` | `api_gateway` |
+| **[MCP API](/api/mcp/)** | `/api/{uuid}/mcp` | `mcp` | `ai_gateway` (Bridge) or `mcp_gateway` |
+| **[Control Plane API](/api/control-plane/)** | `/api/control/mcp` | `admin` | global |
 
-All API endpoints are prefixed with `/api/v1/`:
+Plus per-project introspection endpoints under `admin` scope:
 
-```
-https://gateway.example.com/api/v1/
-```
+- `GET /api/{uuid}/info` — project info
+- `GET /api/{uuid}/endpoints` — list AI endpoints
+- `GET /api/{uuid}/tokens` — list tokens (no plaintexts)
+- `GET /api/{uuid}/models` — discover models (scope: `models`)
 
-## Authentication
+See **[Authentication](/api/auth/)** for the token / scope details.
 
-API requests are authenticated using Bearer tokens. Include your API token in the `Authorization` header:
-
-```bash
-curl -H "Authorization: Bearer pg_live_..." \
-     https://gateway.example.com/api/v1/endpoints/summarize
-```
-
-Tokens use the `pg_live_` prefix for production and `pg_test_` for test environments. Generate tokens in the dashboard under **Security → API Tokens**.
-
-See [Client Tokens](/security/client-tokens/) for details on creating and managing tokens.
-
-## Chat Completions
-
-Send messages to an AI endpoint and receive a completion.
-
-### Via endpoint slug
+## All examples assume
 
 ```bash
-curl -X POST https://gateway.example.com/api/v1/endpoints/summarize \
-  -H "Authorization: Bearer pg_live_..." \
-  -H "Content-Type: application/json" \
-  -d '{
-    "message": "Explain quantum computing in one paragraph."
-  }'
+PG_URL=https://gateway.your-domain.com
+PG_UUID=<your project UUID>
+PG_TOKEN=pg_live_...
+PG_SLUG=<your endpoint slug>
 ```
 
-Or with full message history:
+The Quick Start has step-by-step instructions for getting these. See **[Quick Start](/getting-started/quick-start/)**.
 
-```bash
-curl -X POST https://gateway.example.com/api/v1/endpoints/summarize \
-  -H "Authorization: Bearer pg_live_..." \
-  -H "Content-Type: application/json" \
-  -d '{
-    "messages": [
-      {"role": "user", "content": "Explain quantum computing in one paragraph."}
-    ]
-  }'
-```
+## URL shape conventions
 
-### Via chat/completions route
+- **Project UUID** is always the second path segment: `/api/{uuid}/...`. Get it from the project's URL in the UI or from `pg_get_project` in the Control Plane.
+- **Endpoint slug** is the third segment for AI Gateway and API Gateway: `/api/{uuid}/{slug}` or `/api/{uuid}/proxy/{slug}/`.
+- **Versioning**: only the AI Wrapper uses `/v1/` (because it's mimicking OpenAI's path layout). Other surfaces don't version the path; future versions will use the `X-Api-Version` header.
 
-```bash
-curl -X POST https://gateway.example.com/api/v1/chat/completions \
-  -H "Authorization: Bearer pg_live_..." \
-  -H "Content-Type: application/json" \
-  -d '{
-    "endpoint": "summarize",
-    "messages": [
-      {"role": "user", "content": "Explain quantum computing in one paragraph."}
-    ]
-  }'
-```
+## Request bodies
 
-### Streaming
+- All bodies are `application/json`.
+- The wrapper (`/v1/chat/completions`) and gateway (`/chat/completions`) accept the OpenAI message shape.
+- Direct gateway endpoints (`/api/{uuid}/{slug}`) accept either a `messages` array or a single `message` string.
+- MCP / Control Plane bodies are JSON-RPC 2.0 envelopes.
 
-Add `"stream": true` to receive Server-Sent Events (SSE):
+## Responses
 
-```bash
-curl -X POST https://gateway.example.com/api/v1/endpoints/summarize \
-  -H "Authorization: Bearer pg_live_..." \
-  -H "Content-Type: application/json" \
-  -d '{
-    "message": "Write a short poem.",
-    "stream": true
-  }'
-```
-
-The response is an SSE stream with OpenAI-compatible `data:` chunks, ending with `data: [DONE]`.
-
-## Response format
-
-All non-streaming API responses follow a consistent JSON structure.
-
-**Successful response:**
+Standard responses (success + error):
 
 ```json
 {
   "ok": true,
-  "data": {
-    "id": "chatcmpl-abc123",
-    "content": "Quantum computing uses quantum bits...",
-    "model": "gpt-4o-mini",
-    "finish_reason": "stop",
-    "usage": {
-      "prompt_tokens": 14,
-      "completion_tokens": 82,
-      "total_tokens": 96
-    }
-  },
-  "meta": {
-    "endpoint": "summarize",
-    "provider": "gpt-4o-mini"
-  }
+  "id": "chatcmpl-...",
+  "model": "gpt-4o-mini",
+  "content": "Hello!",
+  "finish_reason": "stop",
+  "usage": { "prompt_tokens": 8, "completion_tokens": 2, "total_tokens": 10 },
+  "meta": { "request_id": "...", "session_id": "..." }
 }
 ```
-
-**Error response:**
 
 ```json
 {
   "ok": false,
-  "error": "Endpoint 'unknown' not found or inactive."
+  "error": "Rate limit exceeded.",
+  "scope": "minute",
+  "retry_after": 38
 }
 ```
 
-### Response fields
+The boolean `ok` is consistent across surfaces. `error` is human-readable. Some surfaces add domain-specific fields (`scope` / `retry_after` / `detail`).
 
-| Field | Type | Description |
+## Common headers
+
+| Header | Direction | What |
 |---|---|---|
-| `ok` | boolean | `true` for success, `false` for errors |
-| `data` | object | The response payload (success only) |
-| `data.content` | string | The AI-generated text |
-| `data.model` | string | Model that produced the response |
-| `data.usage` | object | Token usage counts |
-| `error` | string | Error message (error only) |
-| `meta` | object | Request metadata |
+| `Authorization: Bearer <token>` | request | Always required (except `/login`). |
+| `Content-Type: application/json` | request | For bodies. |
+| `Accept: application/json` | request | Helpful but not required. |
+| `Retry-After` | response | Seconds left in the rate-limit bucket on 429. |
+| `X-Forwarded-Proto` | request (proxy) | Honoured for HTTPS detection when behind a reverse proxy. |
 
-## Supported providers
+## Streaming
 
-| Provider | Key | Example models |
-|---|---|---|
-| OpenAI | `openai` | gpt-4o, gpt-4o-mini, gpt-4-turbo |
-| Anthropic | `anthropic` | claude-sonnet-4-20250514, claude-haiku-4-5-20251001 |
-| Google Gemini | `google` | gemini-2.0-flash, gemini-pro |
+The Gateway and Wrapper surfaces support **Server-Sent Events** when the request body has `"stream": true` AND the endpoint has streaming enabled. Format is OpenAI-compatible.
 
-## Failover
+See **[Streaming](/features/streaming/)** for the wire format and client examples.
 
-When an endpoint has a failover chain configured, the gateway automatically tries the next provider if the primary fails (timeout, 5xx, rate limit). Failover entries inherit runtime settings (temperature, top_p, max_tokens) from the primary endpoint.
+## Errors
 
-## HTTP status codes
+A consistent error shape across all surfaces. See **[Errors](/api/errors/)** for the full status / message / scenario matrix.
 
-| Code | Meaning |
-|---|---|
-| `200` | Success |
-| `401` | Unauthorized — missing or invalid token |
-| `404` | Endpoint not found or inactive |
-| `422` | Validation error |
-| `429` | Rate limited |
-| `502` | Upstream provider error |
+## OpenAPI / Postman?
 
-## Rate limiting
+Currently no published OpenAPI spec. The current mix of REST + JSON-RPC + project-type-aware routing makes a single spec awkward; we may publish per-surface specs later. The **[Cookbook](/cookbook/openai-via-gateway/)** has copy-pasteable working examples for every surface.
 
-API requests are rate-limited per client token. Rate limit headers are included in every response:
+---
 
-```
-X-RateLimit-Limit: 60
-X-RateLimit-Remaining: 58
-X-RateLimit-Reset: 1700000000
-```
+Next: **[Authentication](/api/auth/)**.
 
-When the rate limit is exceeded, the API returns a `429` status code with a `Retry-After` header.
+---
+
+> © Akyros Labs LLC. All rights reserved.

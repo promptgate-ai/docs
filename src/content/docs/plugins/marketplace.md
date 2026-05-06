@@ -1,77 +1,63 @@
 ---
 title: Marketplace
-description: Plugin ecosystem
+description: Coming soon — signed-package plugin marketplace at marketplace.promptgate.dev.
 ---
 
-:::note
-The plugin marketplace is under active development and not yet available. This page describes the planned functionality.
+:::caution[Coming soon]
+The plugin marketplace is **planned, not yet implemented**. This page describes the intended shape so you can plan around it. The runtime in PromptGate today is plugin-ready (every adapter and guardrail implements a contract), but the install / sign / publish workflow doesn't exist yet.
 :::
 
-The PromptGate Marketplace is a curated catalog of signed plugins that extend the platform with additional providers, guardrails, alerting, and integrations.
+## What it'll do
 
-## Concept
+A first-party registry hosted at **`marketplace.promptgate.dev`** distributing signed PromptGate plugins:
 
-PromptGate's core handles credential management, routing, and access control. Plugins add everything else — new AI providers, content filters, notification channels, and custom processing steps. The marketplace at **marketplace.promptgate.dev** is the central hub for discovering and installing plugins.
+- **Provider plugins** — new ProviderContract implementations (think: a future `@promptgate/provider-replicate` for Replicate, etc.)
+- **Guardrail plugins** — additional input checks beyond the four built-ins
+- **Alert plugins** — notification sinks (Slack, PagerDuty, custom webhooks)
+- **OAuth plugins** — pre-baked OAuth client templates (similar to today's Quick-Fill presets but discoverable)
 
-## Planned plugin categories
+Plugins ship as signed packages (`@promptgate/...`). The signature is verified at install time so you can't accidentally pick up a malicious lookalike.
 
-### Provider plugins
-
-Add support for additional AI providers beyond the built-in set:
-
-- Regional or specialized AI providers
-- Self-hosted model servers (Ollama, vLLM, TGI)
-- Custom API adapters for non-standard provider interfaces
-
-### Guardrail plugins
-
-Apply safety and quality controls to requests and responses:
-
-- Content moderation and toxicity filtering
-- PII detection and redaction
-- Output format validation
-- Custom business rule enforcement
-
-### Alert plugins
-
-Send notifications when specific events occur:
-
-- Budget threshold alerts (email, Slack, webhook)
-- Error rate monitoring
-- Unusual usage pattern detection
-- Uptime monitoring for upstream providers
-
-### Integration plugins
-
-Connect PromptGate with external systems:
-
-- Logging to external platforms (Datadog, Sentry, etc.)
-- Metrics export (Prometheus, StatsD)
-- SSO / identity provider integration
-- Webhook triggers for pipeline automation
-
-## Plugin security
-
-All plugins distributed through the marketplace are **cryptographically signed** by Akyros Labs. PromptGate verifies the signature before installation, ensuring that:
-
-- The plugin has not been tampered with
-- The plugin was reviewed and approved for the marketplace
-- The installed version matches the published version
-
-Unsigned or modified plugins are rejected by default.
-
-## Installation
-
-Plugin installation will be available through the dashboard:
-
-1. Navigate to **Marketplace** in the sidebar
-2. Browse or search for plugins
-3. Click **Install** on the desired plugin
-4. Configure plugin-specific settings
-5. Activate the plugin
-
-Plugins can also be installed via the CLI:
+## Installation flow (planned)
 
 ```bash
-php artisan promptgate:plugin:install vendor/plugin-name
+docker compose exec app php artisan plugin:install @promptgate/provider-replicate
 ```
+
+This will:
+
+1. Download the package from `marketplace.promptgate.dev`.
+2. Verify the signature against PromptGate's signing root.
+3. Register the plugin's services with the container.
+4. Run any plugin-specific migrations.
+5. Surface the plugin in the admin UI.
+
+Uninstall:
+
+```bash
+php artisan plugin:uninstall @promptgate/provider-replicate
+```
+
+## Why a marketplace?
+
+PromptGate ships with 8 providers and 4 guardrails. There's a long tail of less-common providers, niche guardrails (e.g. industry-specific PII detectors), alert sinks, and OAuth presets that don't justify in-tree inclusion but make sense as community packages.
+
+A marketplace gives:
+
+- **Discoverability** — one place to find what's out there.
+- **Signing** — trust by default; reject unsigned packages.
+- **Versioning** — pin a specific version per deployment.
+- **Updates** — easy upgrade path with rollback.
+
+## Until then
+
+You can still extend PromptGate by dropping classes into `app/Services/...` and registering them in the appropriate container — see **[Adding a Provider](/providers/adding/)** for the pattern. That works for in-tree forks; the marketplace adds the distribution + signing pieces.
+
+## Tracking
+
+- This page will update once the marketplace ships.
+- The dev story for plugin authors is at **[Developing Plugins](/plugins/developing/)**.
+
+---
+
+> © Akyros Labs LLC. All rights reserved.

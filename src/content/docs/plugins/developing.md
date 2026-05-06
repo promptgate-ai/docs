@@ -1,112 +1,79 @@
 ---
 title: Developing Plugins
-description: Build plugins for PromptGate
+description: Coming soon — manifest format, signing, and distribution for plugin authors.
 ---
 
-:::note
-The plugin development SDK is under active development and not yet available. This page describes the planned approach.
+:::caution[Coming soon]
+Plugin development workflow is **not yet finalised**. This page sketches the intended shape so prospective authors can plan around it.
 :::
 
-PromptGate plugins are PHP packages that extend the platform through a defined set of hooks and interfaces. This page outlines the planned plugin architecture for developers who want to build and publish plugins.
+PromptGate's runtime is already plugin-ready — every extensible piece implements a contract:
 
-## Plugin structure
+- `App\Services\Providers\ProviderContract` for AI providers
+- `App\Services\Guardrails\GuardrailContract` for guardrails
+- (planned) `App\Services\Alerts\AlertSinkContract` for alert sinks
 
-A PromptGate plugin is a Composer package with a specific directory layout:
+What's missing is the **distribution layer** — manifest format, signing, install command, marketplace publishing.
 
-```
-vendor/plugin-name/
-  promptgate.json          # Plugin manifest
-  src/
-    PluginServiceProvider.php  # Laravel service provider
-    ...
-  config/
-    plugin-name.php        # Plugin configuration
-  resources/
-    views/                 # Optional Blade views
-  tests/
-```
+## Planned manifest
 
-### Manifest file
-
-The `promptgate.json` file describes the plugin:
+Each plugin will ship a `plugin.json`:
 
 ```json
 {
-  "name": "vendor/plugin-name",
+  "name": "@promptgate/provider-replicate",
   "version": "1.0.0",
   "type": "provider",
-  "description": "Short description of what the plugin does",
-  "author": "Your Name",
-  "license": "MIT",
-  "promptgate": {
-    "min_version": "1.0.0",
-    "hooks": ["provider.resolve", "request.before"]
+  "main": "src/ReplicateProvider.php",
+  "class": "PromptGate\\Plugins\\Replicate\\ReplicateProvider",
+  "min_promptgate_version": "0.2.0",
+  "author": "Akyros Labs LLC",
+  "description": "Replicate.com provider adapter for PromptGate.",
+  "homepage": "https://github.com/promptgate-org/provider-replicate",
+  "config_schema": {
+    "type": "object",
+    "properties": {
+      "default_timeout": { "type": "integer", "default": 120 }
+    }
   }
 }
 ```
 
-## Plugin types
+PromptGate reads the manifest at install time, registers the plugin's class with the appropriate container, and exposes its config in the admin UI.
 
-### Provider plugins
-
-Implement the provider interface to add support for new AI services:
-
-- Register available models
-- Handle request formatting for the provider's API
-- Parse responses into PromptGate's standard format
-- Support streaming where the provider offers it
-
-### Guardrail plugins
-
-Hook into the request/response pipeline to inspect and modify content:
-
-- `request.before` — Inspect or modify the request before it reaches the provider
-- `response.after` — Inspect or modify the response before it reaches the caller
-- Return rejection responses to block requests that violate rules
-
-### Alert plugins
-
-Subscribe to system events and send notifications:
-
-- Budget threshold events
-- Error events
-- Custom event types defined by other plugins
-
-## Hooks
-
-Plugins register for specific hooks in their service provider. When the hook fires, PromptGate calls the plugin's handler:
-
-| Hook | Fires when |
-|---|---|
-| `provider.resolve` | A provider template resolves to a provider implementation |
-| `request.before` | A request is about to be sent to a provider |
-| `response.after` | A response has been received from a provider |
-| `budget.threshold` | A budget limit reaches a configured threshold |
-| `auth.event` | An authentication event occurs |
-
-## Publishing to the marketplace
-
-To publish a plugin to **marketplace.promptgate.dev**:
-
-1. Develop and test your plugin locally
-2. Submit the plugin for review through the developer portal
-3. Akyros Labs reviews the plugin for security and quality
-4. Approved plugins are signed and published to the marketplace
-5. Users can install the plugin from the dashboard or CLI
-
-## Development tools
-
-The following Artisan commands will be available for plugin development:
+## Signing (planned)
 
 ```bash
-# Scaffold a new plugin
-php artisan promptgate:plugin:make vendor/plugin-name
-
-# Run plugin tests in isolation
-php artisan promptgate:plugin:test vendor/plugin-name
-
-# Package a plugin for submission
-php artisan promptgate:plugin:package vendor/plugin-name
+promptgate-cli sign ./my-plugin --key signing-key.pem
 ```
 
-Detailed SDK documentation, including full interface definitions and example plugins, will be published when the plugin system is available.
+This will produce a `plugin.sig` next to `plugin.json`. PromptGate verifies the signature at install time against a published root certificate.
+
+## Publishing (planned)
+
+```bash
+promptgate-cli publish ./my-plugin
+```
+
+Uploads the package to `marketplace.promptgate.dev` (after signature verification). Public listing follows.
+
+## Until then
+
+You can already extend PromptGate by:
+
+1. Dropping a class into `app/Services/Providers/` (or wherever the contract lives).
+2. Registering it in the appropriate container constructor (e.g. `ProviderRegistry::__construct`).
+3. Restarting the container.
+
+This works fine for **in-tree forks** of the gateway. The marketplace path adds:
+
+- Distribution (no fork needed)
+- Signing (trust)
+- Versioning (rollback)
+- UI registration (admin discovery)
+
+Until the marketplace ships, watch the GitHub repo for updates.
+
+---
+
+> © Akyros Labs LLC. All rights reserved.
