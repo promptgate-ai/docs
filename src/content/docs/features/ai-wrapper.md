@@ -1,69 +1,176 @@
 ---
 title: AI Wrapper
-description: OpenAI-compatible API surface
+description: OpenAI-compatible API surface that routes to any registered provider via aliases.
 ---
 
-:::note
-AI Wrapper is under active development and not yet available. This page describes the planned functionality.
-:::
+An `ai_wrapper` project exposes an **OpenAI-compatible API** that any OpenAI SDK or client can talk to without modification. The wrapper resolves the request's `model` field to a provider behind the scenes.
 
-AI Wrapper projects expose an OpenAI-compatible API that routes requests to any configured provider behind the scenes. If your application already uses the OpenAI SDK, you can point it at PromptGate instead and gain centralized management without changing your code.
+## Public API
 
-## Concept
-
-Many applications integrate with AI providers using the OpenAI client library. AI Wrapper makes PromptGate a drop-in replacement for the OpenAI API:
-
-```python
-from openai import OpenAI
-
-# Point the OpenAI client at PromptGate instead
-client = OpenAI(
-    base_url="https://gateway.example.com/api/v1/wrapper",
-    api_key="pg_live_...",  # PromptGate client token
-)
-
-response = client.chat.completions.create(
-    model="anthropic/claude-sonnet-4-20250514",  # Route to any provider
-    messages=[{"role": "user", "content": "Hello!"}],
-)
+```
+POST /api/{project_uuid}/v1/chat/completions
+GET  /api/{project_uuid}/v1/models
 ```
 
-## Planned features
+Both are bearer-token gated, scope `chat`. Request and response shapes match the OpenAI Chat Completions spec.
 
-### Provider:model routing
+## How model routing works
 
-Specify the provider and model using a `provider/model` format in the `model` field:
+When the client sends `{ "model": "openai:gpt-4o-mini" }`, the wrapper:
 
-- `openai/gpt-4o` — Routes to OpenAI's GPT-4o
-- `anthropic/claude-sonnet-4-20250514` — Routes to Anthropic's Claude Sonnet
-- `google/gemini-2.0-flash` — Routes to Google's Gemini Flash
+1. Parses the `model` string.
+2. **If it's an alias** (a name without `:`) — looks up `wrapper_aliases` and resolves to a `(provider_key, provider_model)` pair.
+3. **If it's `provider:model`** — uses that pair directly.
+4. Resolves the **per-project provider→credential assignment** to find which API key to use.
+5. Calls the provider via the right adapter.
 
-PromptGate resolves the provider, selects the appropriate credential from the project, and forwards the request.
+So a client doesn't know (and doesn't care) which provider is actually serving the request.
 
-### Model aliases
+## Configuring the wrapper
 
-Define short aliases for commonly used provider:model combinations:
+In your `ai_wrapper` project, the sidebar has three items:
 
-| Alias | Routes to |
+### Overview
+
+A summary page: KPIs (assigned providers, aliases, models exposed), the public URL, and a curl example with the right project UUID baked in.
+
+![Wrapper overview — placeholder](#)
+
+### Providers
+
+For each provider you want to expose:
+
+- Tick **Enabled**
+- Pick a **Credential** (filtered by provider)
+
+Disabled providers reject any request that lands on them with a 503-ish error.
+
+### Aliases
+
+Map a friendly name to a `provider:model` pair:
+
+| Alias | Provider | Model |
+|---|---|---|
+| `fast` | `openai` | `gpt-4o-mini` |
+| `smart` | `anthropic` | `claude-3-5-sonnet-20241022` |
+| `cheap` | `groq` | `llama-3.1-8b-instant` |
+
+A request with `"model": "fast"` will be served by OpenAI's gpt-4o-mini. Swap the alias to `groq:llama-3.1-8b-instant` later — clients don't change.
+
+## Calling it like OpenAI
+
+### curl
+
+```bash
+curl -X POST $URL/api/$UUID/v1/chat/completions \
+  -H "Authorization: Bearer pg_live_..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "fast",
+    "messages": [
+      {"role": "user", "content": "Hello!"}
+    ]
+  }'
+```
+
+### Python (openai SDK)
+
+```python
+import os
+from openai import OpenAI
+
+client = OpenAI(
+    base_url=f"{os.environ['PG_URL']}/api/{os.environ['PG_UUID']}/v1",
+    api_key=os.environ['PG_TOKEN'],
+)
+
+resp = client.chat.completions.create(
+    model="fast",
+    messages=[{"role": "user", "content": "Hello!"}],
+)
+print(resp.choices[0].message.content)
+```
+
+### Node.js (openai SDK)
+
+```js
+import OpenAI from 'openai';
+
+const client = new OpenAI({
+    baseURL: `${process.env.PG_URL}/api/${process.env.PG_UUID}/v1`,
+    apiKey: process.env.PG_TOKEN,
+});
+
+const resp = await client.chat.completions.create({
+    model: 'fast',
+    messages: [{ role: 'user', content: 'Hello!' }],
+});
+console.log(resp.choices[0].message.content);
+```
+
+The OpenAI SDK works because the wrapper returns OpenAI's response shape verbatim:
+
+```json
+{
+  "id": "chatcmpl-...",
+  "object": "chat.completion",
+  "model": "gpt-4o-mini",
+  "choices": [{
+    "index": 0,
+    "message": { "role": "assistant", "content": "Hello! How can I help today?" },
+    "finish_reason": "stop"
+  }],
+  "usage": {
+    "prompt_tokens": 8,
+    "completion_tokens": 9,
+    "total_tokens": 17
+  }
+}
+```
+
+## `/v1/models` discovery
+
+```bash
+curl $URL/api/$UUID/v1/models \
+  -H "Authorization: Bearer pg_live_..."
+```
+
+Returns the union of:
+
+- Every alias defined in the project
+- Every `provider:*` placeholder for enabled providers (so clients know `openai:*` routes work)
+
+```json
+{
+  "object": "list",
+  "data": [
+    { "id": "fast", "object": "model", "owned_by": "promptgate", "is_alias": true },
+    { "id": "openai:*", "object": "model", "owned_by": "promptgate", "is_alias": false }
+  ]
+}
+```
+
+## Errors
+
+| Situation | Response |
 |---|---|
-| `default` | `anthropic/claude-sonnet-4-20250514` |
-| `fast` | `openai/gpt-4o-mini` |
-| `smart` | `anthropic/claude-opus-4-20250514` |
+| Unknown alias | 404 |
+| `provider:model` with provider not enabled in this wrapper | 400 |
+| Wrong project type | 400 |
+| Token without `chat` scope | 403 |
+| Provider call fails | 502 |
 
-Callers use the alias in the `model` field, and PromptGate resolves it to the configured provider and model.
+## Why use it instead of AI Gateway?
 
-### OpenAI-compatible chat completions
+- **AI Gateway**: prompts are baked into the endpoint. Clients call `POST /api/X/my-summarizer` with raw user text. Use it when *you* control the prompt.
+- **AI Wrapper**: clients send full chat completions with their own model + messages. Use it when you're standing up a proxy in front of an existing OpenAI-using app.
 
-The wrapper implements the OpenAI chat completions API format:
+You can have both project types in the same PromptGate instance.
 
-- `POST /api/v1/wrapper/chat/completions` — Create a chat completion
-- Supports `messages`, `model`, `temperature`, `max_tokens`, `stream`, and other standard parameters
-- Returns responses in the same format as the OpenAI API
+---
 
-### Credential management
+Next: **[API Gateway](/features/api-gateway/)** — generic HTTP proxy.
 
-PromptGate handles provider authentication. Callers authenticate with a PromptGate client token — they never see or need the underlying provider API keys.
+---
 
-### Logging and budget controls
-
-All requests through the wrapper are logged and subject to the same budget controls and rate limits as AI Endpoints.
+> © Akyros Labs LLC. All rights reserved.

@@ -1,77 +1,133 @@
 ---
 title: Projects
-description: Organize your gateway resources into projects
+description: The top-level container. Every endpoint, token, and policy belongs to a project.
 ---
 
-Projects are the top-level organizational unit in PromptGate. Every credential, provider template, endpoint, and client token belongs to a project. Projects provide isolation between different applications, teams, or environments.
+A **project** is the top-level organisational unit in PromptGate. It owns the endpoints, the API tokens, the guardrail rules, the rate-limit configs, the OAuth connections, the MCP servers, and the audit trail for one application or one team.
 
-## Project types
+Pick a `project_type` at create time (see **[Project Types](/concepts/project-types/)**) and the rest of the gateway adapts:
 
-Each project has a type that determines what kind of gateway resources it can contain. Choose the type that matches your use case when creating a project.
+- The **sidebar** shows the items relevant to that type.
+- The **public API surface** is wired according to the type.
+- The **playground** and **logs** scope to the project.
 
-### AI Gateway
+## Anatomy of a project
 
-The primary project type. AI Gateway projects route requests to AI providers through fixed-prompt endpoints. Each endpoint binds a system prompt, a provider template, and access controls into a single callable URL.
+| Field | Meaning |
+|---|---|
+| `name` | Human-readable name. Shown everywhere. |
+| `slug` | URL-safe identifier. Auto-generated from the name. |
+| `uuid` | Stable opaque identifier. **Used in every public URL** — `/api/{uuid}/...`. |
+| `project_type` | One of `ai_gateway`, `ai_wrapper`, `api_gateway`, `mcp_gateway`. Stable for life. |
+| `env` | `dev` / `staging` / `prod`. Tagged on logs and tokens. |
+| `is_active` | Disabled projects refuse all traffic. |
+| `metadata` | Free-form JSON for your own use. |
 
-Use this when you want to expose purpose-built AI endpoints with locked-down prompts and provider configurations — for example, a summarization endpoint or a classification endpoint.
-
-### AI Wrapper
-
-AI Wrapper projects expose an OpenAI-compatible API surface (e.g., `/v1/chat/completions`) that routes to any configured provider behind the scenes. Applications that already use the OpenAI SDK can point to PromptGate instead and gain centralized credential management, logging, and budget controls without changing their code.
-
-Use this when you want a drop-in replacement for the OpenAI API that can route to multiple providers.
-
-### API Gateway
-
-API Gateway projects act as an HTTP proxy for non-AI upstream APIs. They provide the same authentication, rate limiting, and logging capabilities but for traditional REST or GraphQL APIs.
-
-Use this when you want to centralize access control for third-party APIs alongside your AI providers.
-
-### MCP Gateway
-
-MCP Gateway projects expose endpoints as MCP (Model Context Protocol) tools. MCP-compatible clients like Claude Desktop can discover and invoke these tools directly.
-
-Use this when you want AI assistants to have structured access to your endpoints as callable tools.
+The UUID is the **only** project identifier that goes over the wire. The slug is for the UI's URL, not for the public API.
 
 ## Creating a project
 
-1. Navigate to **Projects** in the sidebar
-2. Click **Create Project**
-3. Fill in the details:
-   - **Name** — A descriptive name (e.g., `Production AI`, `Staging API`)
-   - **Type** — Select one of the four project types
-   - **Description** — Optional notes about the project's purpose
-4. Click **Create**
+Sidebar → **Projects** → **+ New project**.
 
-The project is created and you are taken to its dashboard.
+![Project create modal — placeholder](#)
 
-## Project switcher
+In the modal:
 
-The project switcher in the sidebar shows your currently active project and lets you switch between projects. Endpoints are scoped to the active project. Credentials and Provider Templates are global (available under ADMIN).
+- **Name** — descriptive (e.g. `Customer Support AI`, `GitHub Proxy`).
+- **Type** — pick the right one. **You can't change this later.**
+- **Environment** — `dev` / `staging` / `prod`.
 
-Click the project name in the navigation bar to open the switcher, then select a different project. The page refreshes to show resources for the selected project.
+After save you land on the project, and the sidebar swaps into project-scoped mode.
+
+## Switching between projects
+
+The **project switcher** at the top of the sidebar shows your currently active project. Click it to pick another. The session remembers your last selection.
+
+If you have many projects, you can also navigate to **Sidebar → Manage projects** for the full searchable list.
 
 ## Project settings
 
-Inside a project, you can:
+Inside a project: **Sidebar → Project Settings** (bottom of sidebar).
 
-- **Edit** the project name and description
-- **View** the project type (cannot be changed after creation)
-- **Delete** the project and all its resources
+You can edit:
 
-:::caution
-Deleting a project permanently removes all credentials, provider templates, endpoints, and client tokens associated with it. This action cannot be undone.
-:::
+- **Name**
+- **Environment**
+- **Metadata** JSON
 
-## Resource scoping
+You can't edit:
 
-Resources belong to a project and are isolated from other projects by default:
+- **Type** — pick a new project of the right type and migrate.
+- **UUID** — it's woven into all the URLs and tokens.
+- **Slug** — it's woven into endpoint URLs (for AI Gateway).
 
-| Resource | Scoping |
-|---|---|
-| Credentials | Global (available to all projects) |
-| Provider Templates | Global (available to all projects) |
-| Endpoints | Always project-scoped |
-| Client Tokens | Always project-scoped |
+The same page has a **Danger Zone** for project deletion. Deleting a project cascades to **everything** that belongs to it: endpoints, tokens, logs, audit, guardrail configs, OAuth connections, MCP servers. Take a backup first if you might want any of that data later.
 
-Provider templates can optionally be marked as **global**, making them available across all projects. This is useful for organization-wide default configurations. See [Provider Templates](/features/provider-templates/) for details.
+## What lives in a project vs. globally
+
+PromptGate has a deliberate split between **per-project** and **global** resources:
+
+| Resource | Scope | Why |
+|---|---|---|
+| `credentials` | **Global (admin)** | A single API key for OpenAI is reusable across projects. |
+| `provider_templates` | **Global (admin)** | Reusable provider+model+settings bundles. |
+| `provider_settings` (enable/disable) | **Global (admin)** | Disabling a provider should disable it everywhere. |
+| `users` | **Global (admin)** | Single-user in Community Edition. |
+| Endpoints (`endpoints`, `api_gateway_endpoints`) | **Per-project** | Endpoints are the project's product surface. |
+| API tokens | **Per-project** | Each project has its own clients. |
+| Guardrail configs | **3-level** — global → project → endpoint | Inherits down the chain. |
+| Rate limits / budgets | **Per-endpoint** | Configured on the endpoint itself. |
+| OAuth connections | **Per-project** (api_gateway only) | Different proxies need different OAuth clients. |
+| MCP servers | **Per-project** (mcp_gateway only) | Each gateway aggregates a different set. |
+| Webhooks | **Per-project** | Each project notifies its own destinations. |
+| Sessions | **Per-endpoint** (ai_gateway) | Conversation state attaches to the endpoint that owns it. |
+
+The **Admin** area in the user dropdown (top-right) is where the global resources live: Credentials, AI Providers, Provider Templates, Global Guardrails, Audit Log, Backup / Export.
+
+## Project type reference
+
+Brief recap of what each type unlocks. Full details on each linked page.
+
+### `ai_gateway` — [docs](/features/ai-endpoints/)
+- AI endpoints with prompts, schemas, sessions, streaming, failover
+- MCP Bridge (every endpoint can be exposed as an MCP tool)
+- Guardrails / rate limits / budgets
+
+### `ai_wrapper` — [docs](/features/ai-wrapper/)
+- OpenAI-compatible `/v1/chat/completions` and `/v1/models`
+- Per-project provider→credential assignment
+- Model aliases (`fast` → `openai:gpt-4o-mini`)
+
+### `api_gateway` — [docs](/features/api-gateway/)
+- HTTP proxy endpoints with method allowlist + header policies
+- OAuth Service Connections (encrypted, auto-refresh)
+- SSRF guard, rate limits
+
+### `mcp_gateway` — [docs](/mcp/gateway/)
+- Aggregates registered upstream MCP servers under one URL
+- Tool-name namespacing (`<prefix>__<tool>`)
+- Encrypted upstream Bearer tokens
+
+## API surface
+
+Every project's public API lives under `/api/{project_uuid}/…`. The exact paths depend on the type — see **[API Reference → Overview](/api/overview/)** for the full inventory.
+
+For introspection (admin scope):
+
+```
+GET /api/{uuid}/info       — type, env, name, counts
+GET /api/{uuid}/endpoints  — list endpoints (AI or API)
+GET /api/{uuid}/tokens     — list issued tokens (no plaintext)
+```
+
+## Audit
+
+Every state-change on a project — create, update, deactivate, delete — writes to `audit_logs`. Filter by project on the **Audit Log** page (admin) to see the full history.
+
+---
+
+Next: **[AI Endpoints](/features/ai-endpoints/)**.
+
+---
+
+> © Akyros Labs LLC. All rights reserved.

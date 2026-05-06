@@ -1,117 +1,157 @@
 ---
 title: Provider Templates
-description: Reusable provider + model + settings bundles
+description: Reusable provider + model + credential + default-settings bundles. Attach to endpoints instead of configuring from scratch.
 ---
 
-Provider templates are reusable configurations that bundle a provider, model, and default inference settings into a single named resource. Endpoints reference a provider template instead of specifying provider details directly, making it easy to change models or settings across multiple endpoints at once.
+A **Provider Template** is a named bundle of `(provider, model, credential, default settings)` that endpoints can reference. Without templates, each endpoint repeats the same provider config; with templates, you change one row and every endpoint inherits.
 
-## What a template contains
+## When to use templates
 
-A provider template has four sections, configured through a step-by-step wizard.
+✅ You have many endpoints all hitting `gpt-4o-mini` with `temperature=0.7` and the same OpenAI credential — make a template, attach all endpoints to it.
+✅ You want to swap a model gateway-wide (`gpt-4o-mini` → `gpt-4o`) — edit the template, every endpoint follows.
+✅ You want a single audit point for "what's our default chat model" — the template name is it.
 
-### 1. Identity
+❌ You have one experimental endpoint with unique settings — manual mode is fine.
+❌ Each endpoint genuinely uses a different provider+model — templates would just add indirection.
 
-- **Name** — A descriptive name (e.g., `GPT-4o Production`, `Claude Sonnet Fast`)
-- **Slug** — Auto-generated URL-safe identifier, based on the name
-- **Tags** — Optional labels for organizing and filtering templates
+## Anatomy
 
-### 2. Provider and Model
+| Field | Notes |
+|---|---|
+| `name` | Human-readable. Shown in endpoint pickers. |
+| `slug` | Auto-generated URL-safe identifier. |
+| `description` | Free text. Where you explain *why* this template exists. |
+| `tags` | Free-form labels for filtering. |
+| `provider_key` | Which adapter (`openai`, `anthropic`, …). |
+| `provider_model` | Provider-specific model identifier. |
+| `credential_id` | Which encrypted API key to use. |
+| `temperature` | Default `0.0`–`2.0`. |
+| `top_p` | Default `0.0`–`1.0`. |
+| `max_output_tokens` | Default response cap. |
+| `is_active` | Inactive templates are hidden from endpoint pickers. |
 
-- **Provider** — The AI provider to use (e.g., OpenAI, Anthropic, Google, Mistral)
-- **Model** — The specific model from that provider (e.g., `gpt-4o`, `claude-sonnet-4-20250514`, `gemini-2.0-flash`)
+## Creating a template
 
-The available models update based on the selected provider.
+Top-right user menu → **Provider Templates** → **+ New template**.
 
-### 3. Default settings
+The wizard has 4 tabs:
 
-These settings control the inference behavior and apply as defaults to any endpoint using this template. Endpoints can override these values individually.
+![Provider template wizard — placeholder](#)
 
-| Setting | Description | Typical range |
-|---|---|---|
-| `temperature` | Controls randomness of the output. Lower values produce more deterministic responses. | `0.0` – `2.0` |
-| `top_p` | Nucleus sampling threshold. An alternative to temperature for controlling randomness. | `0.0` – `1.0` |
-| `max_tokens` | Maximum number of tokens in the response. | `1` – model limit |
-| `timeout` | Request timeout in seconds. PromptGate cancels the provider request if it exceeds this duration. | `5` – `300` |
+### Tab 1 — Identity
 
-:::tip
-Set `temperature` to `0` for deterministic tasks like classification or extraction. Use `0.7`–`1.0` for creative tasks like content generation.
-:::
+- **Name**: e.g. `GPT-4o-mini Standard`
+- **Description**: free text
+- **Tags**: comma-separated — appear as chips in the list
 
-### 4. Visibility
+### Tab 2 — Provider
 
-- **Project** — The template is only available within the project where it was created
-- **Global** — The template is available across all projects in the PromptGate instance
+- **Provider**: dropdown of the 8 registered providers
+- **Model**: provider-specific identifier (e.g. `gpt-4o-mini`)
+- **Credential**: filtered by provider — only credentials that match show up
 
-Global templates are useful for organization-wide defaults. For example, you might create a global `GPT-4o Standard` template that every project can reference.
+### Tab 3 — Settings
 
-## Creating a provider template
+- **Temperature** (default `1.0`)
+- **Top P** (default `1.0`)
+- **Max output tokens** (default `1000`)
 
-1. Navigate to **Provider Templates** in the sidebar (within your active project)
-2. Click **Create Template**
-3. Complete the wizard:
-   - **Step 1:** Enter the name and optional tags
-   - **Step 2:** Select the provider and model
-   - **Step 3:** Configure default settings (temperature, top_p, max_tokens, timeout)
-   - **Step 4:** Choose visibility (project or global)
-4. Click **Create**
+### Tab 4 — Activation
 
-## How endpoints use templates
+Single toggle: **Active**. Inactive templates can't be attached to new endpoints (but existing endpoints keep working).
 
-When an endpoint receives a request, it uses its assigned provider template to determine:
+Save.
 
-1. **Which provider and model** to call
-2. **Which credential** to authenticate with (matched by provider within the project)
-3. **What default settings** to apply (temperature, top_p, max_tokens, timeout)
+## Using a template on an endpoint
 
-The endpoint can override any default setting from the template. This means you can have a single template shared across endpoints while tuning individual endpoints as needed.
+In the endpoint wizard's **Tab 2 — Provider**:
 
-```
-Request → Endpoint → Provider Template → Credential → Provider API
-                     (model + settings)   (API key)    (OpenAI, etc.)
-```
+- Pick **Provider Template** mode.
+- Choose your template from the dropdown.
 
-## Managing templates
+The endpoint's provider/model/credential are now read from the template at request time. The endpoint can still **override** runtime settings:
 
-### Editing a template
+- `temperature` (endpoint > template)
+- `top_p` (endpoint > template)
+- `max_output_tokens` (endpoint > template)
 
-You can update any field on an existing template. Changes take effect immediately for all endpoints using that template.
+If the endpoint leaves these fields at defaults, the template's values win. This pattern lets you keep "company-wide standards" in the template and "endpoint-specific tuning" on the endpoint.
 
-:::caution
-Editing a global template affects every endpoint across every project that references it. Verify the impact before making changes.
-:::
+## What changes when I edit a template?
 
-### Deleting a template
+Editing a template **immediately** affects every endpoint that references it. The next request through any of those endpoints will use the new values. There's no caching or per-endpoint snapshot.
 
-Deleting a template removes it from the system. Any endpoint that was using the template will need to be reassigned to a different one.
+So if you change the model from `gpt-4o-mini` to `gpt-4o`:
+
+- All endpoints with this template start hitting `gpt-4o` on the next request.
+- Their `gateway_logs` rows record `provider_model = gpt-4o` from that point on.
+- No restart, no migration, no downtime.
+
+This is powerful — and dangerous. Always think "is this safe to change live?" before editing a widely-used template. Use **deactivate** to test the impact: deactivate a template, verify which endpoints fail-open or fail-closed, then iterate.
+
+## Deactivate vs delete
+
+| Action | Effect |
+|---|---|
+| **Deactivate** | Template is hidden from new-endpoint pickers. Existing endpoints with this template start failing requests. Reversible. |
+| **Delete** | Removes the row. Endpoints with `provider_template_id` pointing to it have it nulled out (foreign key `nullOnDelete`). Those endpoints lose their provider config and break unless they had manual config too. |
 
 ## Examples
 
-**High-quality generation:**
+### Cheap default
 
-| Setting | Value |
-|---|---|
-| Provider | OpenAI |
-| Model | `gpt-4o` |
-| Temperature | `0.8` |
-| Max tokens | `4096` |
-| Timeout | `120` |
+```
+Name:       OpenAI Mini Standard
+Provider:   OpenAI
+Model:      gpt-4o-mini
+Credential: OpenAI Production
+Temperature: 0.7
+Top P:       1.0
+Max tokens:  1000
+```
 
-**Fast classification:**
+Use this for every endpoint that doesn't need `gpt-4o`. When OpenAI releases the next mini model, edit one template.
 
-| Setting | Value |
-|---|---|
-| Provider | Anthropic |
-| Model | `claude-haiku-4-20250414` |
-| Temperature | `0` |
-| Max tokens | `100` |
-| Timeout | `15` |
+### Quality endpoint
 
-**Cost-effective summarization:**
+```
+Name:       Anthropic Sonnet Premium
+Provider:   Anthropic
+Model:      claude-sonnet-4-6-20251001
+Credential: Anthropic Production
+Temperature: 0.5
+Top P:       1.0
+Max tokens:  4000
+```
 
-| Setting | Value |
-|---|---|
-| Provider | Google |
-| Model | `gemini-2.0-flash` |
-| Temperature | `0.3` |
-| Max tokens | `2048` |
-| Timeout | `60` |
+Attach to endpoints where output quality matters more than cost.
+
+### Local fallback
+
+```
+Name:       Ollama Llama Local
+Provider:   Ollama
+Model:      llama3
+Credential: Ollama Localhost (placeholder)
+Temperature: 0.6
+```
+
+Use this in failover chains as a free local backup when paid providers are unreachable.
+
+## Detail page
+
+Each template's detail page shows:
+
+- Identity + provider config + settings
+- **Endpoints using this template** — list with link to each
+- Activate / deactivate / delete actions
+
+Useful sanity check before editing: "what am I about to change?"
+
+---
+
+Next: **[Provider Settings](/providers/settings/)** — gateway-wide enable/disable.
+
+---
+
+> © Akyros Labs LLC. All rights reserved.

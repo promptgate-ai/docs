@@ -1,93 +1,160 @@
 ---
 title: AI Endpoints
-description: Fixed-prompt AI execution points with provider routing
+description: Fixed-prompt, fixed-provider AI endpoints with sessions, schemas, streaming, failover, guardrails, rate limits, and budgets.
 ---
 
-AI Endpoints are the core building block of the AI Gateway. Each endpoint defines a fixed system prompt, a provider configuration, and runtime settings. Your application sends user input to the endpoint URL; PromptGate injects the system prompt, calls the AI provider, and returns the result.
+AI Endpoints are the core building block of an `ai_gateway` project. Each endpoint defines a fixed system prompt, a provider configuration, and runtime settings. Your application sends user input to the endpoint URL; PromptGate runs guardrails, applies the prompts, calls the upstream model, validates the output, logs the result, and returns the response.
 
-## Creating an Endpoint
+## Anatomy
 
-Navigate to your project → **AI Endpoints** → **New endpoint**. The wizard has 7 steps:
+```
+POST /api/{project_uuid}/{endpoint_slug}
+        │
+        ▼
+┌────────────────────────────┐
+│ Token + scope check        │
+│ Rate limit                 │
+│ Budget check               │
+│ Guardrails                 │
+│ Input schema validation    │
+│ System prompt + template   │
+│ Provider call (+failover)  │
+│ Output schema validation   │
+│ Log + audit                │
+└────────────────────────────┘
+        │
+        ▼
+        Response
+```
 
-### 1. Core
+## Creating an endpoint
 
-- **Endpoint Name** — displayed in dashboards and logs
-- **Slug** — auto-generated from the name, used in the API URL
-- **Expose as MCP tool** — when enabled, AI agents can discover this endpoint via the MCP Bridge
+In your `ai_gateway` project: sidebar → **AI Endpoints** → **+ New endpoint**.
 
-The endpoint URL will be: `POST /api/v1/endpoints/{endpoint-slug}`
+The wizard has 7 tabs. Only the first two are required; the rest have sensible defaults.
 
-### 2. Provider & Runtime
+![Endpoint wizard — placeholder](#)
 
-Choose how the endpoint connects to an AI provider:
+### Tab 1 — Core
 
-**Use Provider Template** — select a pre-configured template that bundles provider + model + settings. All template values are applied automatically.
+| Field | Notes |
+|---|---|
+| **Name** | Shown in the UI and logs. |
+| **Slug** | URL path segment. Auto-generated from name; editable. |
+| **Description** | Optional notes for human readers. |
+| **Expose as MCP tool** | Toggle. When on, the project's MCP Bridge serves this endpoint to MCP clients. |
 
-**Configure manually** — pick each setting individually:
-- **Provider Key** — which AI provider to use (OpenAI, Anthropic, Google Gemini)
-- **Provider Credential** — the API key to authenticate with (filtered by provider)
-- **Provider Model** — which model to call (e.g. `gpt-4o-mini`)
+The endpoint URL is `POST /api/{project_uuid}/{slug}`.
 
-**Failover** — add backup provider + model + credential combinations. If the primary fails (timeout, 5xx, rate limit), PromptGate automatically tries the next in the list. Runtime settings (temperature, top_p, max_tokens) are inherited from the primary endpoint.
+### Tab 2 — Provider
 
-**Temperature** — controls randomness (0 = deterministic, 2 = creative)
+Two modes:
 
-**Top P** — nucleus sampling threshold (0–1)
+**Provider Template (recommended)** — pick a pre-baked bundle that already pairs a provider, model, and credential. The endpoint inherits everything; you can override `temperature`, `top_p`, `max_tokens` on the endpoint without touching the template.
 
-### 3. Limits
+**Manual** — pick each piece individually:
 
-- **Max Output Tokens** — cap per response (slider, 1–200000)
-- **Request Token Limit** — approximate max input tokens
-- **Monthly Budget USD** — hard cap, endpoint returns 403 when reached
-- **Cost per 1K Tokens** — used for cost estimates
+- **Provider** — `openai`, `anthropic`, `google`, `mistral`, `groq`, `together`, `ollama`, `cohere`
+- **Model** — provider-specific identifier (`gpt-4o-mini`, `claude-3-5-sonnet-20241022`, …)
+- **Credential** — list filtered by provider
 
-### 4. Streaming
+**Failover** — optional list of backup `(credential, model)` pairs. When the primary call throws (5xx, timeout, rate limit), PromptGate retries the next entry. Runtime settings (temperature, top_p, max_tokens) are reused from the endpoint, not from the failover entry.
 
-Enable Server-Sent Events (SSE) for real-time token delivery. When enabled and the client passes `"stream": true`, responses are streamed as they are generated in OpenAI-compatible SSE format (`data:` chunks ending with `data: [DONE]`).
+**Runtime settings:**
 
-### 5. Session
+| Field | Range | Notes |
+|---|---|---|
+| `temperature` | 0–2 | 0 = deterministic, 1 = default, 2 = creative |
+| `top_p` | 0–1 | Nucleus sampling. Don't tune both temp and top_p. |
+| `max_output_tokens` | 1–200 000 | Hard cap per response. |
 
-Enable server-side conversation state across multiple requests:
+### Tab 3 — Limits
 
-- **Session TTL** — auto-expire idle sessions (60s–7 days)
-- **Max Messages** — message limit per session (1–500)
-- **Max Tokens** — optional total token cap per session
+Cost / volume protection. Empty fields = unlimited.
 
-When sessions are enabled, the gateway automatically creates a session on the first request and returns a `session_id` in the response. Subsequent requests include `session_id` to continue the conversation. The gateway stores the full message history server-side and prepends it to each provider call.
+| Field | Type | Behaviour |
+|---|---|---|
+| `usage_hard_limit_tokens` | int | Per-request cap on input tokens (~4 chars/token estimate). 422 if exceeded. |
+| `monthly_budget_usd` | decimal | Cumulative ceiling per calendar month. |
+| `estimated_cost_per_1k_tokens_usd` | decimal | Required if you set monthly_budget_usd — used to compute spend. |
+| `rate_limit_per_minute` | int | 429 + Retry-After when exceeded. |
+| `rate_limit_per_hour` | int | Independent second window. |
 
-Sessions are enforced:
-- Expired sessions are rejected (410) and deleted
-- Sessions exceeding message or token limits are rejected (429)
-- A session belongs to the token that created it — other tokens cannot access it
-- Expired sessions are automatically purged hourly
+See **[Budgets](/security/budgets/)** and **[Rate Limits](/security/rate-limits/)** for the enforcement details.
 
-### 6. Prompt
+### Tab 4 — Streaming
 
-- **System Prompt** — the system message prepended to every request. The user never sees this.
-- **User Prompt Template** — use `{{input}}` as placeholder for the user's message. If empty, the raw user message is sent directly.
+Toggle Server-Sent Events. When **on** and the client sends `"stream": true`:
 
-### 7. Schema
+- Response is streamed as `data:`-prefixed JSON chunks
+- Each chunk has the OpenAI Chat Completion shape (delta inside `choices[0].delta.content`)
+- Final chunk is `data: [DONE]`
 
-- **Input Schema** — optional JSON Schema to validate request bodies. Invalid payloads are rejected (422) before reaching the provider.
-- **Output Schema** — optional JSON Schema to validate model responses. Failed validation returns a 502 error.
+When **off**, `stream: true` from the client is ignored.
 
-## Calling an Endpoint
+See **[Streaming](/features/streaming/)** for the SSE format and client examples.
 
-### Simple message
+### Tab 5 — Sessions
+
+Server-side conversation state. When **enabled**:
+
+| Field | Notes |
+|---|---|
+| `session_ttl_seconds` | Auto-expire idle sessions (60–604800). |
+| `session_max_messages` | Cap on the conversation length (1–500). |
+| `session_max_tokens` | Optional total token cap. |
+
+The gateway creates a session on the first request and returns `meta.session_id`. Subsequent requests include `session_id` to resume.
+
+See **[Sessions](/features/sessions/)** for the flow + edge cases.
+
+### Tab 6 — Prompt
+
+| Field | Notes |
+|---|---|
+| `prompt` | System message prepended to every request. |
+| `user_prompt_template` | Wraps the user's input. Use `{{input}}` as the placeholder. |
+
+If `user_prompt_template` is empty, the user's message is passed through unchanged.
+
+Example template:
+
+```
+You are responding to a customer support ticket.
+
+Ticket from user:
+{{input}}
+
+Reply concisely.
+```
+
+### Tab 7 — Schema
+
+JSON Schema validation, both directions.
+
+| Field | Notes |
+|---|---|
+| `input_schema` | Validates the request payload. 422 if invalid. |
+| `output_schema` | Validates the model's response content. 502 if invalid. |
+
+See **[JSON Schema Validation](/features/schemas/)**.
+
+## Calling an endpoint
+
+### curl — single message
 
 ```bash
-curl -X POST https://gateway.example.com/api/v1/endpoints/summarize \
+curl -X POST $URL/api/$UUID/$SLUG \
   -H "Authorization: Bearer pg_live_..." \
   -H "Content-Type: application/json" \
   -d '{"message": "Explain quantum computing."}'
 ```
 
-### Full message history
+### curl — full conversation
 
 ```bash
-curl -X POST https://gateway.example.com/api/v1/endpoints/summarize \
+curl -X POST $URL/api/$UUID/$SLUG \
   -H "Authorization: Bearer pg_live_..." \
-  -H "Content-Type: application/json" \
   -d '{
     "messages": [
       {"role": "user", "content": "What is AI?"},
@@ -97,39 +164,147 @@ curl -X POST https://gateway.example.com/api/v1/endpoints/summarize \
   }'
 ```
 
-### With session
+### Python (requests)
 
-```bash
-# First request — creates session
-curl -X POST .../api/v1/endpoints/chat \
-  -H "Authorization: Bearer pg_live_..." \
-  -d '{"message": "Hello"}'
-# Response includes: "meta": {"session_id": "uuid-here"}
+```python
+import os, requests
 
-# Continue conversation
-curl -X POST .../api/v1/endpoints/chat \
-  -H "Authorization: Bearer pg_live_..." \
-  -d '{"message": "What did I just say?", "session_id": "uuid-here"}'
+resp = requests.post(
+    f"{os.environ['PG_URL']}/api/{os.environ['PG_UUID']}/{os.environ['PG_SLUG']}",
+    headers={"Authorization": f"Bearer {os.environ['PG_TOKEN']}"},
+    json={"message": "Explain quantum computing."},
+    timeout=120,
+)
+resp.raise_for_status()
+print(resp.json()["content"])
 ```
 
-### Streaming
+### Node.js (fetch)
+
+```js
+const url = `${process.env.PG_URL}/api/${process.env.PG_UUID}/${process.env.PG_SLUG}`;
+const r = await fetch(url, {
+    method: 'POST',
+    headers: {
+        'Authorization': `Bearer ${process.env.PG_TOKEN}`,
+        'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ message: 'Explain quantum computing.' }),
+});
+const data = await r.json();
+console.log(data.content);
+```
+
+### With sessions
+
+First request creates the session:
+
+```json
+POST .../my-chat
+{ "message": "Hello, my name is Sam." }
+```
+
+Response:
+
+```json
+{
+  "ok": true,
+  "content": "Nice to meet you, Sam!",
+  "meta": { "session_id": "0e2f...c4" }
+}
+```
+
+Subsequent requests pass `session_id`:
+
+```json
+POST .../my-chat
+{
+  "message": "What's my name?",
+  "session_id": "0e2f...c4"
+}
+```
+
+The gateway prepends the stored history before calling the model.
+
+### With streaming
 
 ```bash
-curl -X POST .../api/v1/endpoints/chat \
+curl -N -X POST $URL/api/$UUID/$SLUG \
   -H "Authorization: Bearer pg_live_..." \
   -d '{"message": "Write a poem.", "stream": true}'
 ```
 
-## Endpoint List
+The `-N` flag disables curl's output buffering so chunks land as they arrive.
 
-The endpoint index page shows all endpoints for the current project with:
-- Name and slug
-- Provider or template
-- Active/inactive status
-- Actions (deactivate)
+## Endpoint list
 
-## Template vs Manual
+The index page shows every endpoint for the project with:
 
-When using a **Provider Template**, the endpoint inherits the template's provider, model, credential, and default settings.
+- Name + slug (with eye icon → bridge URL modal)
+- Provider or template chip
+- ON/OFF status (deactivated endpoints reject all calls)
+- **MCP** chip when `expose_as_mcp_tool=true`
+- Edit / Deactivate actions
 
-When configuring **manually**, you set everything directly on the endpoint.
+The KPI strip at the top shows total / streaming / sessions / **MCP tools** counts.
+
+## Endpoint detail
+
+Clicking a row opens the detail page with:
+
+- Live status (1h KPIs: RPS, p95, errors)
+- Routing policy (provider, model, credential, failover chain)
+- Recent trace (last 10 requests)
+- Prompt + schema preview
+- **MCP card** when exposed (tool name, bridge URL, curl example)
+
+## Programmatic discovery
+
+Tokens with `admin` scope can list endpoints:
+
+```bash
+curl $URL/api/$UUID/endpoints \
+  -H "Authorization: Bearer pg_live_..."
+```
+
+Returns:
+
+```json
+{
+  "ok": true,
+  "data": [
+    { "uuid": "...", "name": "Hello World", "slug": "hello-world", "is_active": true, "expose_as_mcp_tool": false }
+  ]
+}
+```
+
+## Behaviour reference
+
+| Situation | Response |
+|---|---|
+| No bearer token | 401 |
+| Token from different project | 403 |
+| Wrong scope (`admin`-only on chat endpoint) | 403 |
+| Endpoint inactive | 404 |
+| Per-minute rate limit hit | 429 + `Retry-After` |
+| Per-request token cap exceeded | 422 |
+| Monthly budget exhausted | 422 |
+| Guardrail blocks request | 422 |
+| Input schema invalid | 422 |
+| Provider error after failover | 502 |
+| Output schema invalid | 502 |
+| Successful chat | 200 |
+
+## Common patterns
+
+- **Locked-down product endpoint** — set system prompt, input/output schema, low monthly budget, mask-mode PII filter, `expose_as_mcp_tool=false`.
+- **Internal-tools agent** — sessions on, no schemas, generous limits, expose_as_mcp_tool=true, MCP scope token issued to the agent.
+- **Public-facing demo** — strict per-minute rate limit, low monthly budget, content-length guardrail, no sessions.
+
+---
+
+Next: **[AI Wrapper](/features/ai-wrapper/)** — OpenAI-compatible mode.
+
+---
+
+> © Akyros Labs LLC. All rights reserved.
