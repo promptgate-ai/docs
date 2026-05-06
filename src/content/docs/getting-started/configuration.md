@@ -56,7 +56,7 @@ PromptGate supports SQLite (default), MySQL 8+, and PostgreSQL 14+. See **[Datab
 
 For production, **Redis** for cache + sessions + queue is recommended:
 
-```env
+```bash
 CACHE_STORE=redis
 SESSION_DRIVER=redis
 QUEUE_CONNECTION=redis
@@ -122,7 +122,7 @@ Used by **[PII Filter](/security/pii-filter/)** when `person_name` or `address` 
 | `PII_CONTEXTUAL_MODEL` | `gpt-4o-mini` | Model identifier passed to the provider. Should be cheap + fast. |
 | `PII_CONTEXTUAL_MAX_CHARS` | `8000` | Inputs longer than this skip contextual detection (regex still runs). |
 
-```env
+```bash
 PII_CONTEXTUAL_ENABLED=true
 PII_CONTEXTUAL_CREDENTIAL_ID=3
 PII_CONTEXTUAL_MODEL=gpt-4o-mini
@@ -146,7 +146,7 @@ Used by **[SSRF Protection](/security/ssrf/)** to permit specific internal hosts
 |---|---|---|
 | `SSRF_ALLOWED_HOSTS` | _(empty)_ | Comma-separated host list. `*` disables the SSRF guard entirely (only used by the test suite). |
 
-```env
+```bash
 # Allow an internal API on a docker bridge network
 SSRF_ALLOWED_HOSTS=internal-api.svc.local,10.0.0.42
 ```
@@ -165,7 +165,7 @@ Leave these `false` unless you know you need them.
 
 Drop-in template for a real deployment:
 
-```env
+```bash
 APP_NAME="PromptGate"
 APP_ENV=production
 APP_KEY=base64:...                # generate with `php artisan key:generate`

@@ -141,7 +141,7 @@ Never reuse the example key on a production gateway — it's published in the ex
 
 ### 2. Set `APP_URL` to your real URL
 
-```env
+```bash
 APP_URL=https://gateway.yourcompany.com
 APP_DEBUG=false
 APP_ENV=production
@@ -155,7 +155,7 @@ PromptGate runs behind any reverse proxy that terminates TLS. Examples:
 
 #### Caddy (simplest)
 
-```caddyfile
+```text
 gateway.yourcompany.com {
     reverse_proxy localhost:8000
 }

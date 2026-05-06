@@ -21,7 +21,7 @@ SQLite is more capable than people think — at the gateway-log volumes most tea
 
 No setup required. The default `.env`:
 
-```env
+```bash
 DB_CONNECTION=sqlite
 DB_DATABASE=database/database.sqlite
 ```
@@ -77,7 +77,7 @@ volumes:
 
 ### 2. Update `.env`
 
-```env
+```bash
 DB_CONNECTION=mysql
 DB_HOST=mysql
 DB_PORT=3306
@@ -151,7 +151,7 @@ volumes:
 
 ### 2. Update `.env`
 
-```env
+```bash
 DB_CONNECTION=pgsql
 DB_HOST=postgres
 DB_PORT=5432

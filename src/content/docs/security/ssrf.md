@@ -57,7 +57,7 @@ A `gateway_logs` row is also written with `error_message = "ssrf_blocked: ..."`.
 
 Set the env var to a comma-separated list of hosts (or IPs) you want to permit despite their private/loopback nature:
 
-```env
+```bash
 SSRF_ALLOWED_HOSTS=internal-api.svc.local,10.0.0.42,api.tools.local
 ```
 
@@ -68,7 +68,7 @@ A host on the allowlist is **not resolved** at all — the validator short-circu
 
 ### Wildcard `*` — disable entirely
 
-```env
+```bash
 SSRF_ALLOWED_HOSTS=*
 ```
 

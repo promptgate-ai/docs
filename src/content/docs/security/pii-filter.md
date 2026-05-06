@@ -156,7 +156,7 @@ This means contextual detection is best-effort. It's a useful extra layer but no
 
 Set these in `backend/.env` then `php artisan config:clear`:
 
-```env
+```bash
 PII_CONTEXTUAL_ENABLED=true
 PII_CONTEXTUAL_CREDENTIAL_ID=3            # ID of an App\Models\Credential row
 PII_CONTEXTUAL_MODEL=gpt-4o-mini          # Cheap + fast is the right pick
