@@ -84,7 +84,7 @@ client = OpenAI(
 )
 
 resp = client.chat.completions.create(
-    model="fast",                             # Or "openai:gpt-4o-mini" / "openai:gpt-4o"
+    model="promptgate:fast",                  # Or "openai:gpt-4o-mini" / "openai:gpt-4o"
     messages=[{"role": "user", "content": "Hello!"}],
 )
 print(resp.choices[0].message.content)
@@ -101,7 +101,7 @@ const client = new OpenAI({
 });
 
 const resp = await client.chat.completions.create({
-    model: 'fast',
+    model: 'promptgate:fast',
     messages: [{ role: 'user', content: 'Hello!' }],
 });
 console.log(resp.choices[0].message.content);
@@ -115,7 +115,7 @@ from langchain_openai import ChatOpenAI
 llm = ChatOpenAI(
     base_url=os.environ['PG_BASE'],
     api_key=os.environ['PG_TOKEN'],
-    model="fast",
+    model="promptgate:fast",
 )
 print(llm.invoke("Hello!").content)
 ```
@@ -132,7 +132,7 @@ const promptgate = createOpenAI({
 });
 
 const { text } = await generateText({
-    model: promptgate('fast'),
+    model: promptgate('promptgate:fast'),
     prompt: 'Hello!',
 });
 ```

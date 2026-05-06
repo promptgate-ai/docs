@@ -88,17 +88,21 @@ Clients now send only:
 
 ```json
 {
-    "model": "summarizer",
+    "model": "promptgate:summarizer",
     "messages": [{"role": "user", "content": "Long text..."}]
 }
 ```
 
 …and the wrapper:
 
-1. Resolves `summarizer` to `openai:gpt-4o-mini` (with the project's OpenAI credential).
+1. Resolves `promptgate:summarizer` to `openai:gpt-4o-mini` (with the project's OpenAI credential).
 2. Prepends the preset's `system_prompt` to messages (because the client didn't supply one).
 3. Uses `temperature: 0.3`, `top_p: 1.0`, `max_tokens: 500` from the preset.
 4. Calls OpenAI.
+
+:::tip[The `promptgate:` namespace]
+The **preferred** form for project aliases is `promptgate:<name>` — namespaced. It reads at a glance as "PromptGate-managed model" rather than `provider:model`, and reserves the prefix against future provider key clashes. The bare `"summarizer"` form **still works** for backward compatibility but the canonical id surfaced in `/v1/models` and the UI is the namespaced one.
+:::
 
 #### Override semantics (request wins)
 
@@ -106,7 +110,7 @@ If the client **does** send a value, the client wins:
 
 ```json
 {
-    "model": "summarizer",
+    "model": "promptgate:summarizer",
     "messages": [{"role": "user", "content": "..."}],
     "temperature": 0.9
 }
@@ -212,7 +216,8 @@ Returns the union of:
   "object": "list",
   "data": [
     {
-      "id": "fast",
+      "id": "promptgate:fast",
+      "alias": "fast",
       "object": "model",
       "owned_by": "promptgate-alias",
       "provider": "openai",
@@ -221,7 +226,8 @@ Returns the union of:
       "is_preset": false
     },
     {
-      "id": "summarizer",
+      "id": "promptgate:summarizer",
+      "alias": "summarizer",
       "object": "model",
       "owned_by": "promptgate-alias",
       "provider": "openai",

@@ -39,8 +39,9 @@ Body — same shape as OpenAI:
 
 Where `model` is one of:
 
-- An **alias** defined in the project (e.g. `fast`, `smart`, `cheap`).
-- A **preset** — an alias that also bakes in `system_prompt` + sampling defaults (e.g. `summarizer`, `translator`).
+- A **namespaced alias** — `promptgate:<name>` (preferred), e.g. `promptgate:fast`, `promptgate:summarizer`.
+- A **bare alias** — `<name>` (backward compatible), e.g. `fast`, `summarizer`.
+- A **preset** — any alias that also bakes in `system_prompt` + sampling defaults. Same `promptgate:<name>` form.
 - A **`provider:model`** pair (e.g. `openai:gpt-4o-mini`, `anthropic:claude-3-5-sonnet-20241022`).
 
 Aliases resolve via `wrapper_aliases`. Provider+model uses the project's `wrapper_provider_settings.credential_id` for that provider.
