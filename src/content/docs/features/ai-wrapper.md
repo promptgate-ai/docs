@@ -45,9 +45,11 @@ For each provider you want to expose:
 
 Disabled providers reject any request that lands on them with a 503-ish error.
 
-### Aliases
+### Aliases (and Presets)
 
-Map a friendly name to a `provider:model` pair:
+Map a friendly name to a `provider:model` pair — and optionally bake in a system prompt + sampling defaults so clients don't have to send them.
+
+#### Plain aliases — just rename a model
 
 | Alias | Provider | Model |
 |---|---|---|
@@ -56,6 +58,71 @@ Map a friendly name to a `provider:model` pair:
 | `cheap` | `groq` | `llama-3.1-8b-instant` |
 
 A request with `"model": "fast"` will be served by OpenAI's gpt-4o-mini. Swap the alias to `groq:llama-3.1-8b-instant` later — clients don't change.
+
+#### Aliases as presets — bake in prompt + sampling defaults
+
+This is the OpenRouter-style behaviour: an alias can also carry:
+
+| Field | Purpose |
+|---|---|
+| `description` | Free-text — surfaces in `/v1/models` so callers know what the alias is for. |
+| `system_prompt` | Prepended to messages when the client doesn't supply a system message. |
+| `temperature` | Default sampling temperature. |
+| `top_p` | Default nucleus sampling threshold. |
+| `max_tokens` | Default max output tokens. |
+
+Example — a `summarizer` alias that bakes in a system prompt and conservative sampling:
+
+| Field | Value |
+|---|---|
+| Alias | `summarizer` |
+| Provider | `openai` |
+| Provider Model | `gpt-4o-mini` |
+| Description | "Three-sentence executive summary." |
+| System Prompt | "Summarize the user's input in three sentences. No bullet points." |
+| Temperature | `0.3` |
+| Top P | `1.0` |
+| Max Tokens | `500` |
+
+Clients now send only:
+
+```json
+{
+    "model": "summarizer",
+    "messages": [{"role": "user", "content": "Long text..."}]
+}
+```
+
+…and the wrapper:
+
+1. Resolves `summarizer` to `openai:gpt-4o-mini` (with the project's OpenAI credential).
+2. Prepends the preset's `system_prompt` to messages (because the client didn't supply one).
+3. Uses `temperature: 0.3`, `top_p: 1.0`, `max_tokens: 500` from the preset.
+4. Calls OpenAI.
+
+#### Override semantics (request wins)
+
+If the client **does** send a value, the client wins:
+
+```json
+{
+    "model": "summarizer",
+    "messages": [{"role": "user", "content": "..."}],
+    "temperature": 0.9
+}
+```
+
+→ `temperature: 0.9` is used, not the preset's `0.3`.
+
+Same for `messages`: if the client already supplies a system message, the preset's `system_prompt` is **not** prepended (no dual-system confusion). For `top_p` and `max_tokens` it's the same rule — request value wins, preset value is the floor.
+
+#### When to use presets vs plain aliases
+
+| Use plain alias | Use preset |
+|---|---|
+| You just want a friendly name for a `provider:model`. | You want a single client-facing name that bakes in *how* to call it. |
+| Clients control all sampling params themselves. | Clients should always use a specific system prompt + sampling. |
+| You'll swap the underlying model later. | You'll swap the underlying model AND want consistent calling defaults. |
 
 ## Calling it like OpenAI
 
@@ -144,8 +211,31 @@ Returns the union of:
 {
   "object": "list",
   "data": [
-    { "id": "fast", "object": "model", "owned_by": "promptgate", "is_alias": true },
-    { "id": "openai:*", "object": "model", "owned_by": "promptgate", "is_alias": false }
+    {
+      "id": "fast",
+      "object": "model",
+      "owned_by": "promptgate-alias",
+      "provider": "openai",
+      "provider_model": "gpt-4o-mini",
+      "is_alias": true,
+      "is_preset": false
+    },
+    {
+      "id": "summarizer",
+      "object": "model",
+      "owned_by": "promptgate-alias",
+      "provider": "openai",
+      "provider_model": "gpt-4o-mini",
+      "is_alias": true,
+      "is_preset": true,
+      "description": "Three-sentence executive summary.",
+      "preset": {
+        "system_prompt": "Summarize the user's input in three sentences. No bullet points.",
+        "temperature": 0.3,
+        "max_tokens": 500
+      }
+    },
+    { "id": "openai:*", "object": "model", "owned_by": "openai", "is_alias": false }
   ]
 }
 ```
