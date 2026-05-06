@@ -1,0 +1,45 @@
+---
+import Default from '@astrojs/starlight/components/Footer.astro';
+const year = new Date().getFullYear();
+---
+
+<Default><slot /></Default>
+
+<div class="pg-footer">
+	<div class="pg-footer-row">
+		<span>© {year} <a href="https://akyroslabs.com" target="_blank" rel="noopener">Akyros Labs LLC</a>. All rights reserved.</span>
+		<span>·</span>
+		<span><a href="https://promptgate.dev" target="_blank" rel="noopener">promptgate.dev</a></span>
+		<span>·</span>
+		<span><a href="https://github.com/promptgate-org/promptgate" target="_blank" rel="noopener">GitHub</a></span>
+	</div>
+	<div class="pg-footer-license">
+		PromptGate Community Edition is licensed under the Business Source License 1.1.
+	</div>
+</div>
+
+<style>
+	.pg-footer {
+		margin-top: 2rem;
+		padding-top: 1rem;
+		border-top: 1px solid var(--sl-color-hairline);
+		font-size: 0.85rem;
+		color: var(--sl-color-gray-3);
+	}
+	.pg-footer-row {
+		display: flex;
+		gap: 0.5rem;
+		flex-wrap: wrap;
+		align-items: center;
+	}
+	.pg-footer-row a {
+		color: inherit;
+		text-decoration: underline;
+		text-underline-offset: 2px;
+	}
+	.pg-footer-license {
+		margin-top: 0.5rem;
+		color: var(--sl-color-gray-4);
+		font-size: 0.78rem;
+	}
+</style>

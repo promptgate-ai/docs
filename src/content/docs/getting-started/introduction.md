@@ -1,54 +1,61 @@
 ---
 title: Introduction
-description: What is PromptGate and why use it
+description: PromptGate is a self-hosted AI gateway, API gateway, and MCP hub.
 ---
 
-PromptGate is an open-source, self-hosted AI gateway platform built by [Akyros Labs LLC](https://akyros.com). It sits between your applications and AI providers, giving you centralized control over credentials, routing, budgets, and security.
+PromptGate is a **self-hosted gateway** that sits between your applications and the services they call — AI providers (OpenAI, Anthropic, Google, Mistral, Groq, Together, Ollama, Cohere), arbitrary HTTP APIs, and MCP (Model Context Protocol) servers. It centralises **credentials, observability, security, and policy** so you don't have to wire those concerns into every app.
 
-## Why PromptGate?
+> Built with Laravel 12, FrankenPHP, and a Claude-Design-inspired UI.
 
-Most teams integrate AI providers directly into their applications. This creates real problems as usage grows:
+## What PromptGate does
 
-- **API keys scattered** across services, `.env` files, and team members
-- **No visibility** into which app is calling which model, or how much it costs
-- **No guardrails** — a single misconfigured prompt can burn through your budget
-- **Provider lock-in** — switching from OpenAI to Anthropic means rewriting integration code
+| Project type | What it gives you |
+|---|---|
+| **AI Gateway** | First-class endpoints for AI providers with prompts, schemas, sessions, streaming, failover, guardrails, rate limits, budgets |
+| **AI Wrapper** | OpenAI-compatible API surface (`/v1/chat/completions`, `/v1/models`) — point any OpenAI SDK at it and route across providers behind aliases |
+| **API Gateway** | HTTP proxy for any upstream API with method allowlists, header policies, OAuth 2.0 service connections, SSRF guard, rate limits |
+| **MCP Gateway** | Aggregate multiple upstream MCP servers under one endpoint with namespace prefixing, encrypted bearer tokens, and a Control Plane |
 
-PromptGate solves these by acting as a single gateway layer.
+Plus on top of all of that:
 
-## What it does
+- **8 built-in providers**: OpenAI · Anthropic · Google Gemini · Mistral · Groq · Together AI · Ollama (local) · Cohere
+- **Guardrails**: PII filter (regex + LLM-based contextual), prompt-injection guard, keyword blocklist, content-length cap
+- **Token system** with scopes (`chat`, `models`, `admin`, `proxy`, `mcp`) and per-project isolation
+- **Observability** — dashboard, metrics, live logs, audit log, playground
+- **Backup / restore** — one-click ZIP export of every table
 
-**Secure provider routing** — Define provider templates that bind a provider, model, and default settings into a reusable configuration. Route requests through PromptGate instead of calling providers directly.
+## Who it's for
 
-**Encrypted credential storage** — Store provider API keys with AES-256-GCM encryption. Keys are displayed once at creation and never shown again.
+- **Solo developers** running an AI side project who want one place for credentials, costs, and rate limits.
+- **Small teams** standing up an internal gateway so apps don't each carry their own provider keys.
+- **Agentic tooling** that wants to expose existing AI endpoints — or proxy upstream services — as MCP tools.
 
-**Project isolation** — Organize resources into projects, each with its own credentials, templates, and endpoints. Four project types cover different use cases: AI Gateway, AI Wrapper, API Gateway, and MCP Gateway.
+## How this documentation is organised
 
-**Budget controls** — Set spending limits per endpoint, per project, or per client token to prevent runaway costs. *(Coming soon)*
+- **[Getting Started](/getting-started/introduction/)** — install, configure, log in, hello world.
+- **[Concepts](/concepts/architecture/)** — the mental model: project types, how requests flow.
+- **[Projects & Endpoints](/features/projects/)** — defining what PromptGate exposes.
+- **[Providers](/providers/overview/)** — registering credentials, picking models, swapping providers.
+- **[Security](/security/authentication/)** — login, tokens, guardrails, rate limits, budgets, SSRF, audit.
+- **[MCP](/mcp/overview/)** — bridge, gateway, and control plane (the trio).
+- **[Observability](/observability/dashboard/)** — what you see in the UI.
+- **[Administration](/admin/overview/)** — gateway-wide settings, webhooks, backup.
+- **[API Reference](/api/overview/)** — every public endpoint with `curl`, Python, and Node.js examples.
+- **[Plugins](/plugins/marketplace/)** — coming soon.
+- **[Cookbook](/cookbook/openai-via-gateway/)** — task-oriented walkthroughs.
 
-**MCP Bridge** — Automatically expose your AI endpoints as MCP (Model Context Protocol) tools, making them available to any MCP-compatible client. *(Coming soon)*
+## License
 
-**Plugin marketplace** — Extend PromptGate with signed plugins for additional providers, guardrails, alerting, and more. *(Coming soon)*
+PromptGate **Community Edition** is source-available under the **Business Source License 1.1** — free for internal / non-commercial use, with a change date after which it converts to Apache 2.0. The **Cloud Edition** (multi-tenant SaaS, RBAC, billing) is a separate commercial offering.
 
-## Architecture
-
-PromptGate is built with:
-
-- **Laravel 12** — PHP framework handling routing, authentication, encryption, and business logic
-- **FrankenPHP** — High-performance PHP application server, packaged in Docker
-- **SQLite / PostgreSQL / MySQL** — Your choice of database
-- **Redis** — Optional, for caching and queue processing
-
-The platform runs as a single Docker container or via `docker compose` for production deployments.
-
-## Editions
-
-**Community Edition** — Self-hosted, open-source under the Business Source License 1.1 (BSL 1.1). Free to use for internal purposes. The license converts to Apache 2.0 after the change date specified in the license file.
-
-**Cloud Edition** — Managed hosting by Akyros Labs. *(Coming soon)*
+See **[Editions](/concepts/editions/)** for the full feature matrix and license details.
 
 ## Next steps
 
-- [Install PromptGate](/getting-started/installation/) with Docker in under a minute
-- Follow the [Quick Start](/getting-started/quick-start/) to create your first project and provider template
-- Read about [Configuration](/getting-started/configuration/) to customize your deployment
+- **[Installation](/getting-started/installation/)** — clone the repo and `docker compose up`.
+- **[Quick Start](/getting-started/quick-start/)** — create your first project and run a request end-to-end.
+- **[Configuration](/getting-started/configuration/)** — every env variable that matters.
+
+---
+
+> © Akyros Labs LLC. All rights reserved.

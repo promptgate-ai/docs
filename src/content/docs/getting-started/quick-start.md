@@ -1,92 +1,177 @@
 ---
 title: Quick Start
-description: Get up and running in 5 minutes
+description: Zero to a working AI endpoint, served through PromptGate, in about 5 minutes.
 ---
 
-This guide walks you through the core workflow: install PromptGate, create a project, store a provider credential, and configure a provider template. By the end, you will have a working gateway configuration ready for endpoints.
+This walkthrough takes you from a fresh install to a real `POST /api/{uuid}/chat` call hitting OpenAI through PromptGate. You will:
 
-## Step 1 — Install and log in
+1. Log in.
+2. Add an OpenAI credential.
+3. Create a project and an AI endpoint.
+4. Issue a token.
+5. Call the endpoint with `curl` / Python / Node.
 
-Follow the [Installation guide](/getting-started/installation/) to start PromptGate with Docker:
+If you haven't installed PromptGate yet, do that first: **[Installation](/getting-started/installation/)**.
 
-```bash
-docker compose up -d
-```
+## 1. Log in and change the default password
 
-Open `http://localhost:8000` and log in with the default credentials:
+Open `http://localhost:8000`. Log in with:
 
 ```
 Email:    admin@promptgate.dev
 Password: admin
 ```
 
-:::tip
-Change the default password immediately via your account settings.
+Click your name in the top-right corner → **Profile** → change the password. (You only need to do this once.)
+
+![Login screen — placeholder](#)
+
+## 2. Add a provider credential
+
+Top-right user menu → **Credentials**. Click **New credential**.
+
+- **Name**: `OpenAI Production`
+- **Provider**: `OpenAI`
+- **Secret**: paste your `sk-…` key
+
+Save. The secret is encrypted with AES-256-GCM at rest. You can see the prefix only after this point.
+
+![Credential create — placeholder](#)
+
+:::tip[Don't have an OpenAI key?]
+You can use any of the 8 built-in providers — Anthropic, Google Gemini, Mistral, Groq, Together AI, Cohere, or local Ollama. The provider in step 2 picks the adapter; the rest of the flow is identical. See **[Providers Overview](/providers/overview/)**.
 :::
 
-## Step 2 — Create a project
+## 3. Create a project
 
-Projects are the top-level container for all gateway resources. Each project has a type that determines its capabilities.
+Sidebar → **Projects** → **+ New project**.
 
-1. Click **Projects** in the sidebar
-2. Click **Create Project**
-3. Fill in the details:
-   - **Name:** `My AI Gateway`
-   - **Type:** `AI Gateway`
-   - **Description:** *(optional)*
-4. Click **Create**
+- **Name**: `Quickstart`
+- **Type**: `AI Gateway`
+- **Environment**: `prod`
 
-You are now inside your new project. The project switcher in the top navigation lets you move between projects at any time.
+You'll land on the project switcher; click your new project to enter it. The sidebar now shows project-scoped items: **AI Endpoints**, **Playground**, **Live Logs**, **Metrics**, **Guardrails**, **API Tokens**, **Webhooks**.
 
-:::note
-The four project types are **AI Gateway** (AI endpoint routing), **AI Wrapper** (OpenAI-compatible API surface), **API Gateway** (HTTP proxy), and **MCP Gateway** (MCP tool server). Choose the type that matches your use case. See [Projects](/features/projects/) for details.
+## 4. Create an AI endpoint
+
+Project sidebar → **AI Endpoints** → **+ New endpoint**.
+
+The endpoint wizard has 7 tabs, but you only need to fill out two for this walkthrough:
+
+**Tab 1 — Core:**
+- **Name**: `Hello World`
+- (Slug auto-fills as `hello-world`)
+
+**Tab 2 — Provider:**
+- **Mode**: `Manual`
+- **Provider**: `OpenAI`
+- **Model**: `gpt-4o-mini`
+- **Credential**: pick the one you just added
+
+Skip Limits, Streaming, Sessions, Prompt, Schema for now — defaults are fine. Hit **Create**.
+
+You'll land on the endpoint detail page. Click the eye icon next to the slug to see the endpoint URL — something like:
+
+```
+POST http://localhost:8000/api/8e3f...c2/hello-world
+```
+
+![Endpoint detail — placeholder](#)
+
+## 5. Issue an API token
+
+Project sidebar → **API Tokens** → **+ New token**.
+
+- **Name**: `quickstart`
+- **Environment**: `live`
+- **Scopes**: tick `chat`
+
+Save. The plaintext token (`pg_live_…`) is shown **once**. Copy it now.
+
+:::caution[One-time display]
+PromptGate stores SHA-256 hashes only — you can't recover the plaintext later. If you lose it, rotate the token to mint a new one.
 :::
 
-## Step 3 — Add a credential
+## 6. Call the endpoint
 
-Credentials store your provider API keys with AES-256-GCM encryption.
+Replace `<UUID>` with your project's UUID (visible in the endpoint detail URL) and `<TOKEN>` with the plaintext you just copied.
 
-1. Navigate to **Credentials** in the sidebar
-2. Click **Create Credential**
-3. Select a provider (e.g., **OpenAI**)
-4. Paste your API key
-5. Click **Create**
+### curl
 
-The key is encrypted and stored. You will see the masked version (e.g., `sk-...abc123`) — the full key is never displayed again after creation.
+```bash
+curl -X POST http://localhost:8000/api/<UUID>/hello-world \
+  -H "Authorization: Bearer <TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{"message": "Say hi in one sentence."}'
+```
 
-:::caution
-Copy and save your API key before creating the credential if you need it elsewhere. PromptGate encrypts it immediately and will only show a masked version from this point on.
-:::
+### Python
 
-## Step 4 — Create a provider template
+```python
+import os, requests
 
-Provider templates bundle a provider, model, and default settings into a reusable configuration.
+resp = requests.post(
+    f"http://localhost:8000/api/{os.environ['PG_UUID']}/hello-world",
+    headers={"Authorization": f"Bearer {os.environ['PG_TOKEN']}"},
+    json={"message": "Say hi in one sentence."},
+)
+resp.raise_for_status()
+print(resp.json())
+```
 
-1. Navigate to **Provider Templates** in the sidebar
-2. Click **Create Template**
-3. Walk through the wizard:
-   - **Identity:** Name it `GPT-4o Default`, add optional tags
-   - **Provider & Model:** Select **OpenAI** and **gpt-4o**
-   - **Settings:** Set temperature to `0.7`, max tokens to `4096`
-   - **Visibility:** Choose **Project** (available only in the current project) or **Global** (available in all projects)
-4. Click **Create**
+### Node.js
 
-The template is now ready to be attached to endpoints.
+```js
+const uuid = process.env.PG_UUID;
+const token = process.env.PG_TOKEN;
 
-## Step 5 — Create an endpoint (coming soon)
+const r = await fetch(`http://localhost:8000/api/${uuid}/hello-world`, {
+    method: 'POST',
+    headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ message: 'Say hi in one sentence.' }),
+});
+console.log(await r.json());
+```
 
-Endpoints are the execution points that your applications call. Each endpoint binds a fixed system prompt, a provider template, and access controls into a single URL.
+You should see something like:
 
-This feature is under active development. Once available, the workflow will be:
+```json
+{
+  "ok": true,
+  "id": "chatcmpl-...",
+  "model": "gpt-4o-mini",
+  "content": "Hi there! How can I help today?",
+  "finish_reason": "stop",
+  "usage": {
+    "prompt_tokens": 14,
+    "completion_tokens": 9,
+    "total_tokens": 23
+  }
+}
+```
 
-1. Navigate to **Endpoints** in the sidebar
-2. Click **Create Endpoint**
-3. Assign a provider template, write your system prompt, configure budget limits
-4. Use the generated endpoint URL in your application
+## 7. Watch it in the UI
 
-## What's next
+While that request is firing, navigate to **Live Logs** in the project sidebar — you'll see the request appear in real time, with status, latency, and token counts. **Metrics** rolls these up into 24h / 7d charts, and **Audit Log** records the create/use of the endpoint and token.
 
-- Learn more about [Projects](/features/projects/) and the four gateway types
-- Understand [Credential](/features/credentials/) security and encryption
-- Explore [Provider Templates](/features/provider-templates/) and their settings
-- Read about [Configuration](/getting-started/configuration/) to customize your deployment
+## What you just did
+
+- ✅ Encrypted a provider credential at rest
+- ✅ Created a project-scoped AI endpoint with a fixed provider + model
+- ✅ Issued a scoped, hashed API token
+- ✅ Routed a chat completion through the gateway
+
+## Next steps
+
+- **[AI Endpoints](/features/ai-endpoints/)** — system prompts, schemas, sessions, streaming, failover.
+- **[Guardrails](/security/guardrails/)** — turn on PII redaction, prompt-injection blocking, keyword blocklists.
+- **[Rate Limits](/security/rate-limits/)** & **[Budgets](/security/budgets/)** — caps per-minute, per-hour, per-month.
+- **[AI Wrapper](/features/ai-wrapper/)** — point any OpenAI SDK at the gateway directly.
+- **[Cookbook](/cookbook/openai-via-gateway/)** — task-oriented walkthroughs.
+
+---
+
+> © Akyros Labs LLC. All rights reserved.
