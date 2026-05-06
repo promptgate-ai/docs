@@ -56,6 +56,7 @@ Cloud Edition is the same code with **multi-tenant features unlocked**:
 | **Org hierarchies** (multiple workspaces per org) | — | ✅ |
 | **Billing / per-user pricing** | — | ✅ |
 | **Managed updates / SLA / monitoring** | — | ✅ |
+| **Log retention** | 7 days (gateway), 30 days (audit), 14 days (webhook deliveries), 30 days (sessions) | unlimited |
 
 Cloud Edition is sold as a SaaS — sign up at <https://promptgate.dev> when it's launched, or stay self-hosted on Community.
 
@@ -72,6 +73,23 @@ Cloud Edition is sold as a SaaS — sign up at <https://promptgate.dev> when it'
 | You build for a customer who'll self-host | **Community** |
 
 If you start on Community and outgrow it, the **[Backup / Export](/admin/backup/)** ZIP gives you a portable JSON dump of every table you can hand to Cloud (or any future self-hosted replica) on import.
+
+## How the edition is set
+
+A single environment variable controls everything:
+
+```bash
+PG_EDITION=community   # default — what you get from the public repo
+PG_EDITION=cloud       # only set on Akyros-managed deployments
+```
+
+The flag is read by `config/edition.php` and surfaces through:
+
+- **`App\Services\Edition\Edition::isCommunity()` / `::isCloud()`** for runtime checks
+- **`@editionIs('community')` Blade directive** for view-level gating
+- **Retention caps** in `config('edition.retention.*')`, applied daily by the `promptgate:prune` Artisan command
+
+If you self-host, leave it on `community`. The retention policy keeps the SQLite/Postgres footprint small without needing manual `DELETE` jobs.
 
 ## Plugins
 
