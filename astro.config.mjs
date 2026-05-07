@@ -37,6 +37,7 @@ export default defineConfig({
 						{ label: 'Architecture', slug: 'concepts/architecture' },
 						{ label: 'Project Types', slug: 'concepts/project-types' },
 						{ label: 'Editions (Community vs Cloud)', slug: 'concepts/editions' },
+						{ label: 'First-run Onboarding', slug: 'concepts/onboarding' },
 					],
 				},
 				{
