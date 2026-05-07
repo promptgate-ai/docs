@@ -53,6 +53,7 @@ export default defineConfig({
 						{ label: 'Anomaly Alerts', slug: 'features/anomaly-alerts' },
 						{ label: 'Management API', slug: 'features/management-api' },
 						{ label: 'Tool / Function Calling', slug: 'features/tool-calling' },
+						{ label: 'Embeddings', slug: 'features/embeddings' },
 						{ label: 'AI Wrapper', slug: 'features/ai-wrapper' },
 						{ label: 'API Gateway', slug: 'features/api-gateway' },
 						{ label: 'Sessions', slug: 'features/sessions' },
