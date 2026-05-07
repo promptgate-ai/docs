@@ -52,6 +52,7 @@ export default defineConfig({
 						{ label: 'Endpoint Versions', slug: 'features/endpoint-versions' },
 						{ label: 'Anomaly Alerts', slug: 'features/anomaly-alerts' },
 						{ label: 'Management API', slug: 'features/management-api' },
+						{ label: 'Tool / Function Calling', slug: 'features/tool-calling' },
 						{ label: 'AI Wrapper', slug: 'features/ai-wrapper' },
 						{ label: 'API Gateway', slug: 'features/api-gateway' },
 						{ label: 'Sessions', slug: 'features/sessions' },
