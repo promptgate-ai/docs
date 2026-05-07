@@ -46,6 +46,7 @@ export default defineConfig({
 						{ label: 'AI Endpoints', slug: 'features/ai-endpoints' },
 						{ label: 'Routing Rules', slug: 'features/routing-rules' },
 						{ label: 'Replay from Logs', slug: 'features/replay' },
+						{ label: 'Response Cache', slug: 'features/response-cache' },
 						{ label: 'AI Wrapper', slug: 'features/ai-wrapper' },
 						{ label: 'API Gateway', slug: 'features/api-gateway' },
 						{ label: 'Sessions', slug: 'features/sessions' },
