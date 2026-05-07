@@ -50,6 +50,7 @@ export default defineConfig({
 						{ label: 'Endpoint Evals', slug: 'features/evals' },
 						{ label: 'Cost Dashboard', slug: 'features/cost-dashboard' },
 						{ label: 'Endpoint Versions', slug: 'features/endpoint-versions' },
+						{ label: 'Anomaly Alerts', slug: 'features/anomaly-alerts' },
 						{ label: 'AI Wrapper', slug: 'features/ai-wrapper' },
 						{ label: 'API Gateway', slug: 'features/api-gateway' },
 						{ label: 'Sessions', slug: 'features/sessions' },
