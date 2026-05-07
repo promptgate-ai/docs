@@ -49,6 +49,7 @@ export default defineConfig({
 						{ label: 'Response Cache', slug: 'features/response-cache' },
 						{ label: 'Endpoint Evals', slug: 'features/evals' },
 						{ label: 'Cost Dashboard', slug: 'features/cost-dashboard' },
+						{ label: 'Endpoint Versions', slug: 'features/endpoint-versions' },
 						{ label: 'AI Wrapper', slug: 'features/ai-wrapper' },
 						{ label: 'API Gateway', slug: 'features/api-gateway' },
 						{ label: 'Sessions', slug: 'features/sessions' },
