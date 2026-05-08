@@ -46,7 +46,7 @@ astro.config.mjs         Starlight + sidebar configuration
 Pushes to `main` automatically build and deploy to Cloudflare Pages
 (`docs.promptgate.dev`) via [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml).
 
-The build pins to Node 20 + Astro 6.3.x. Pagefind builds the local
+The build pins to Node 22 + Astro 6.3.x. Pagefind builds the local
 search index at the end of `npm run build` — no third-party search
 service, no API key, no telemetry.
 
