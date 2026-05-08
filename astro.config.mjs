@@ -3,12 +3,13 @@ import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 
 export default defineConfig({
+	site: 'https://docs.promptgate.dev',
 	integrations: [
 		starlight({
 			title: 'PromptGate',
 			description: 'AI Gateway Platform — Documentation',
 			social: [
-				{ icon: 'github', label: 'GitHub', href: 'https://github.com/promptgate-org/promptgate' },
+				{ icon: 'github', label: 'GitHub', href: 'https://github.com/promptgate-ai/docs' },
 			],
 			customCss: ['./src/styles/custom.css'],
 			components: {
@@ -18,7 +19,7 @@ export default defineConfig({
 				{ tag: 'meta', attrs: { name: 'copyright', content: '© Akyros Labs LLC. All rights reserved.' } },
 			],
 			editLink: {
-				baseUrl: 'https://github.com/promptgate-org/promptgate/edit/main/docs/',
+				baseUrl: 'https://github.com/promptgate-ai/docs/edit/main/',
 			},
 			sidebar: [
 				{

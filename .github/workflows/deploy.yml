@@ -1,0 +1,63 @@
+# PromptGate documentation — Cloudflare Pages deploy
+# (c) Akyros Labs LLC <hello@promptgate.dev>
+#
+# Triggers ONLY on tag push (e.g. `v1.0.0`, `v1.2`) and manual dispatch.
+# Pushes to `main` only run CI (see ci.yml) — they don't deploy. This
+# keeps docs.promptgate.dev pinned to released versions while letting
+# main absorb work-in-progress without going live.
+#
+# To release docs:
+#     git tag v1.0.0 && git push origin v1.0.0
+#
+# Required repo secrets:
+#   CLOUDFLARE_API_TOKEN   — token with `Account ▸ Cloudflare Pages ▸ Edit`
+#                            permission, scoped to the docs project.
+#   CLOUDFLARE_ACCOUNT_ID  — your Cloudflare account ID
+#                            (Dashboard ▸ Workers & Pages ▸ Overview).
+#
+# The `--project-name` below must match the project created via wrangler.
+
+name: Deploy to Cloudflare Pages
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  deployments: write
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build & deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: production
+      url: https://docs.promptgate.dev
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Build Starlight site
+        run: npm run build
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=promptgate-docs --branch=main

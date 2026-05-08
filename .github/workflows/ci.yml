@@ -1,0 +1,42 @@
+# PromptGate documentation CI
+# (c) Akyros Labs LLC <hello@promptgate.dev>
+#
+# Verifies the Starlight build passes on every PR.
+# Deploy happens via deploy.yml on pushes to main.
+
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Starlight build (Node 20)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Audit (production deps)
+        run: npm audit --omit=dev --audit-level=moderate
+
+      - name: Build site
+        run: npm run build
