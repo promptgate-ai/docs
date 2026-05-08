@@ -5,12 +5,13 @@ description: Pick the right project type — every other choice flows from this 
 
 PromptGate organises everything around **projects**. A project's `project_type` decides which routes are wired, which sidebar items show up, and which features apply. You pick a type at creation time and it's stable for the life of the project.
 
-## The four types
+## The five types
 
 | Type | Pick when… | Public path |
 |---|---|---|
 | `ai_gateway` | You want fully-controlled AI endpoints with prompts, schemas, sessions, streaming. | `POST /api/{uuid}/{slug}` |
 | `ai_wrapper` | You want a drop-in OpenAI-compatible API for any registered provider. | `POST /api/{uuid}/v1/chat/completions` |
+| `agent_proxy` | You want Claude Code / Codex / Cursor / Aider to route through PromptGate as their corporate egress gateway. | `POST /api/{uuid}/v1/{messages,responses,chat/completions,embeddings}` |
 | `api_gateway` | You want to proxy any HTTP API with method/header policies + OAuth. | `ANY /api/{uuid}/proxy/{slug}/{path?}` |
 | `mcp_gateway` | You want to aggregate multiple upstream MCP servers under one endpoint. | `POST /api/{uuid}/mcp` |
 
@@ -54,6 +55,19 @@ Aliases let you swap providers without changing client code. Per-provider creden
 Use this when you have an existing app calling OpenAI and just want a gateway in front: API tokens, observability, guardrails, rate limits — without rewriting the client.
 
 → **[AI Wrapper](/features/ai-wrapper/)** for the full reference.
+
+## Agent Proxy (`agent_proxy`)
+
+The corporate-egress framing of the same engine. Same provider routing, model aliases, presets, response cache, and cost tracking as `ai_wrapper`, but with two additions that matter when coding agents are the clients:
+
+- **Four API shapes on one project**: OpenAI Chat Completions (`/v1/chat/completions`), OpenAI Responses (`/v1/responses`), Anthropic Messages (`/v1/messages`), OpenAI Embeddings (`/v1/embeddings`). All four go through the same wrapper resolver so cross-provider routing works (e.g. Claude Code calls Anthropic shape, gets answered by GPT-4o-mini).
+- **Default-secure egress guardrails**: [Reversible Redaction](/security/reversible-redaction/) (tokenize PII before the LLM call, restore on response) and the [Secret Scanner](/security/secret-scanner/) (catch AWS keys / GitHub PATs / private keys before they leak). Both are off by default; project-level config opts in.
+
+The Setup page (`/projects/{p}/agent-proxy/setup`) renders copy-pasteable env-var snippets for Claude Code (`ANTHROPIC_BASE_URL`), Codex CLI (`OPENAI_BASE_URL`), Cursor / Aider / Continue / Cline — and shows a "Connected agents · last 7 days" panel inferred from `gateway_logs` so you can see who's actually using the proxy.
+
+Use this when your team uses multiple coding agents and you want one cost dashboard, one audit trail, one PII / secret guardrail in front of all of them.
+
+→ **[Agent Proxy](/concepts/agent-proxy/)** for the full reference.
 
 ## API Gateway (`api_gateway`)
 
