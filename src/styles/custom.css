@@ -1,7 +1,119 @@
-/* PromptGate Docs — Light theme customization */
+/*
+ * PromptGate Docs — brand-aligned Starlight overrides.
+ * (c) 2026 Akyros Labs LLC. All rights reserved.
+ *
+ * Light mode: body and link text stay black on white. Green is used
+ *             only as accent — link underlines, hover/active backgrounds,
+ *             and the pagination buttons. Avoids the "bright lime on
+ *             white" readability problem.
+ * Dark mode:  keeps the bright lime as the foreground accent — it
+ *             reads fine against the dark background.
+ */
+
+/* Self-hosted typefaces matching the marketing site — Space Grotesk
+   for body, JetBrains Mono for code blocks. No third-party requests
+   to fonts.googleapis.com / fonts.gstatic.com. */
+@import '@fontsource/space-grotesk/400.css';
+@import '@fontsource/space-grotesk/500.css';
+@import '@fontsource/space-grotesk/600.css';
+@import '@fontsource/space-grotesk/700.css';
+@import '@fontsource/jetbrains-mono/400.css';
+@import '@fontsource/jetbrains-mono/500.css';
+@import '@fontsource/jetbrains-mono/600.css';
+
 :root {
-  --sl-color-accent-low: #e8f5d6;
-  --sl-color-accent: #ace74d;
-  --sl-color-accent-high: #3d5a0f;
   --sl-font: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+  --sl-font-system: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+  --sl-font-system-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Wider main column. Starlight defaults to ~45rem (~720px) which
+     makes the page feel cramped when the right-rail TOC is open.
+     60rem (~960px) gives prose room to breathe without crossing the
+     "too wide for comfortable reading" threshold (~75 chars/line at
+     this font size). */
+  --sl-content-width: 60rem;
+
+  /* Brand color, hue-aligned with the marketing site. */
+  --pg-accent: oklch(0.86 0.19 128);
+  --pg-accent-hover: oklch(0.78 0.2 128);
+  --pg-accent-low: oklch(0.95 0.05 128);
+  --pg-accent-ink: oklch(0.18 0.08 128);
+}
+
+/* ---------------------------------------------------------------- */
+/* Light mode                                                       */
+/* ---------------------------------------------------------------- */
+
+:root[data-theme='light'] {
+  --sl-color-accent-low: var(--pg-accent-low);
+  --sl-color-accent: var(--pg-accent);
+  --sl-color-accent-high: var(--pg-accent-ink);
+  --sl-color-text-accent: var(--sl-color-text);
+}
+
+/* Body links: text inherits, underline carries the accent ----------- */
+:root[data-theme='light'] .sl-markdown-content a:not(:where(.not-content *)) {
+  color: var(--sl-color-text);
+  text-decoration: underline;
+  text-decoration-color: var(--pg-accent);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+:root[data-theme='light'] .sl-markdown-content a:not(:where(.not-content *)):hover {
+  text-decoration-color: var(--pg-accent-hover);
+}
+
+/* Sidebar — black text by default, green BG only on hover + active --*/
+:root[data-theme='light'] .sidebar-pane a:hover {
+  background: var(--pg-accent);
+  color: var(--sl-color-text);
+}
+:root[data-theme='light'] .sidebar-pane a[aria-current='page'] {
+  background: var(--pg-accent);
+  color: var(--sl-color-text);
+}
+
+/* Pagination buttons at page bottom — green bg, black text -------- */
+:root[data-theme='light'] .pagination-links > a {
+  background: var(--pg-accent);
+  color: var(--sl-color-text);
+  border: 1px solid var(--pg-accent-ink);
+}
+:root[data-theme='light'] .pagination-links > a:hover {
+  background: var(--pg-accent-hover);
+  color: var(--sl-color-text);
+}
+
+/* Splash-page hero CTAs — Starlight 0.38 renders these as
+   `<a class="sl-link-button primary|minimal">`. The primary action
+   gets the lime treatment; the minimal one stays understated. 8px
+   radius across both. */
+.sl-link-button {
+  border-radius: 8px !important;
+}
+:root[data-theme='light'] .sl-link-button.primary {
+  background: var(--pg-accent);
+  color: var(--sl-color-text);
+  border: 1px solid var(--pg-accent-ink);
+}
+:root[data-theme='light'] .sl-link-button.primary:hover {
+  background: var(--pg-accent-hover);
+  color: var(--sl-color-text);
+}
+
+/* Right-rail TOC: active item gets the green underline accent ----- */
+:root[data-theme='light'] starlight-toc nav a[aria-current='true'] {
+  color: var(--sl-color-text);
+  border-inline-start-color: var(--pg-accent);
+}
+
+/* ---------------------------------------------------------------- */
+/* Dark mode — bright lime as foreground accent (Starlight default
+/* with our hue, no layout changes)                                 */
+/* ---------------------------------------------------------------- */
+
+:root[data-theme='dark'] {
+  --sl-color-accent-low: oklch(0.28 0.06 128);
+  --sl-color-accent: var(--pg-accent);
+  --sl-color-accent-high: oklch(0.95 0.04 128);
 }

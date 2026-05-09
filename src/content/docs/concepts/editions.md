@@ -11,11 +11,11 @@ PromptGate is shipped in two editions. They share the same codebase and the same
 - **Cost**: free
 - **Where it runs**: your machines
 - **Who supports it**: the community + GitHub issues
-- **Source**: <https://github.com/promptgate-org/promptgate>
+- **Source**: <https://github.com/promptgate-ai/promptgate>
 
 The Community Edition is **single-user** by design — there's exactly one admin account. That keeps the security model simple: every action is yours, every audit entry is yours, every credential is yours.
 
-It includes everything the gateway can do at the protocol / runtime level: all four project types, all eight providers, all guardrails, rate limits, budgets, OAuth connections, MCP, observability, backup. The full feature matrix is on **[FEATURELIST.md](https://github.com/promptgate-org/promptgate/blob/main/FEATURELIST.md)** in the repo.
+It includes everything the gateway can do at the protocol / runtime level: all four project types, all eight providers, all guardrails, rate limits, budgets, OAuth connections, MCP, observability, backup. The full feature matrix is on **[FEATURELIST.md](https://github.com/promptgate-ai/promptgate/blob/main/FEATURELIST.md)** in the repo.
 
 ### What BSL 1.1 means in practice
 
@@ -27,7 +27,7 @@ In plain English:
 - ✅ Modify the source. Contribute back. Fork it. Patch it. Self-host it forever.
 - ❌ Wrap it in a sign-up flow and sell it as a hosted gateway. (That's what Cloud Edition exists for.)
 
-For the exact legal text, see the [LICENSE](https://github.com/promptgate-org/promptgate/blob/main/LICENSE) file in the repo.
+For the exact legal text, see the [LICENSE](https://github.com/promptgate-ai/promptgate/blob/main/LICENSE) file in the repo.
 
 ## Cloud Edition
 

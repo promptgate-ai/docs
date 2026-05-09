@@ -23,7 +23,7 @@ This is the fastest path from zero to a running gateway.
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/promptgate-org/promptgate.git
+git clone https://github.com/promptgate-ai/promptgate.git
 cd promptgate
 ```
 
@@ -113,7 +113,7 @@ If you'd rather run PHP locally:
 ### Install
 
 ```bash
-git clone https://github.com/promptgate-org/promptgate.git
+git clone https://github.com/promptgate-ai/promptgate.git
 cd promptgate/backend
 composer install
 cp .env.example .env

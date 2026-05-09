@@ -29,7 +29,7 @@ Each plugin will ship a `plugin.json`:
   "min_promptgate_version": "0.2.0",
   "author": "Akyros Labs LLC",
   "description": "Replicate.com provider adapter for PromptGate.",
-  "homepage": "https://github.com/promptgate-org/provider-replicate",
+  "homepage": "https://github.com/promptgate-ai/provider-replicate",
   "config_schema": {
     "type": "object",
     "properties": {
