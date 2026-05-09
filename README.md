@@ -52,9 +52,9 @@ service, no API key, no telemetry.
 
 ## Contributing
 
-Issues and pull requests are welcome. The "Edit this page" link in the
-top-right of every doc page points at the relevant `.md` file with a
-ready-to-go GitHub edit form.
+Issues and pull requests are welcome. Doc files live under
+`src/content/docs/` — find the page you want to change there and open
+a PR.
 
 For substantive changes (new sections, restructured navigation), open
 an issue first so we can talk through the shape.

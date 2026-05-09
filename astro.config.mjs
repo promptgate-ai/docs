@@ -18,9 +18,6 @@ export default defineConfig({
 			head: [
 				{ tag: 'meta', attrs: { name: 'copyright', content: '© Akyros Labs LLC. All rights reserved.' } },
 			],
-			editLink: {
-				baseUrl: 'https://github.com/promptgate-ai/docs/edit/main/',
-			},
 			sidebar: [
 				{
 					label: 'Getting Started',
