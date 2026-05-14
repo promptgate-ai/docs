@@ -66,6 +66,7 @@ export default defineConfig({
 					items: [
 						{ label: 'Projects', slug: 'features/projects' },
 						{ label: 'AI Endpoints', slug: 'features/ai-endpoints' },
+						{ label: 'Typed Input Variables', slug: 'features/typed-variables' },
 						{ label: 'Routing Rules', slug: 'features/routing-rules' },
 						{ label: 'Replay from Logs', slug: 'features/replay' },
 						{ label: 'Response Cache', slug: 'features/response-cache' },
