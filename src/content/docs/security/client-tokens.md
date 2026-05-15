@@ -1,9 +1,9 @@
 ---
 title: Client Tokens
-description: Bearer tokens with scopes — pg_live_ / pg_test_, SHA-256 hashed, project-scoped, rotatable.
+description: Project-scoped bearer tokens with per-endpoint allowlist, per-token rate + budget caps, deactivate / reactivate flow, and arbitrary operator metadata.
 ---
 
-API tokens are how clients authenticate to PromptGate's public API. They're **project-scoped**, **scope-tagged**, and **SHA-256 hashed** at rest.
+API tokens are how external clients authenticate to PromptGate. They are **project-scoped**, **SHA-256 hashed** at rest, and now carry their own **endpoint allowlist**, **rate-limit caps**, **monthly budget cap**, and **arbitrary metadata** independently of the endpoint they call.
 
 ## Token format
 
@@ -11,177 +11,111 @@ API tokens are how clients authenticate to PromptGate's public API. They're **pr
 pg_live_a1b2c3d4e5f6789...
 └─┬──┘
   │
-  └── Environment prefix
+  └── Static prefix
 ```
 
-| Prefix | Environment | Use |
+All tokens carry the `pg_live_` prefix. The legacy `pg_test_` mode existed only as a UI hint and has been retired.
+
+## Scope ↔ project type
+
+Scopes are no longer chosen per token in the in-project UI. The project's type determines what the gateway needs:
+
+| Project type | Scope set |
+|---|---|
+| `ai_gateway`, `ai_wrapper`, `agent_proxy` | `chat`, `models` |
+| `api_gateway` | `proxy` |
+| `mcp_gateway` | `mcp` |
+
+Management scopes (`admin`, `tokens:write`, `endpoints:write`, `credentials:read`) only apply to tokens minted via the Management API and live under a separate admin surface.
+
+## Endpoint allowlist
+
+Each token can optionally restrict itself to a subset of endpoints in its project:
+
+- **Empty / null** → every endpoint in the project is reachable (permissive default).
+- **Set** → only endpoints whose `id` appears in the list. Requests against any other endpoint return `403 Forbidden`.
+
+The allowlist is stored on `api_tokens.endpoint_ids` as a JSON array of ints. The check lives in the gateway controllers right after the endpoint lookup, so it covers slug-based, chat-completions, and wrapper paths uniformly.
+
+## Per-token limits
+
+Three independent caps can be set per token; **null = fall back to the endpoint-level setting**, **set = take min(token, endpoint)** so the tighter cap always wins.
+
+| Field | Effect |
+|---|---|
+| `rate_limit_per_minute` | Token-keyed bucket evaluated in addition to the endpoint bucket. Either bucket can return 429. |
+| `rate_limit_per_hour` | Token-keyed hour bucket. |
+| `monthly_budget_usd_cap` | Sum of `cost_usd` from `gateway_logs` for this token in the current calendar month. When it exceeds the cap the request fails with 422 *before* the provider call. |
+
+## Lifecycle states
+
+| State | How you get there | Effect at request time |
 |---|---|---|
-| `pg_live_` | `live` | Production |
-| `pg_test_` | `test` | Testing / staging / dev |
+| **Active** (`is_active = true`) | Default at create. Reactivate from the menu. | Token passes auth. |
+| **Inactive** (`is_active = false`, reversible) | "Deactivate" in the row menu. | Token returns `401 Invalid or revoked token`. Endpoint surface stays untouched. |
+| **Revoked** (`is_active = false`, permanent) | "Revoke (permanent)" in the row menu. | Same effect as Inactive but framed as final — same DB state, the modal text just signals intent. |
 
-The prefix is purely a hint for humans (and log scanners). Both formats route through the same auth path.
+Reactivating an inactive token restores it; revoke is the operator's "burn it down" affordance with the matching confirm.
 
-## Scopes
+## Metadata
 
-A token carries a list of scopes. The required scope per route:
+Tokens carry an arbitrary `metadata` JSON object — pass-through, never interpreted by the gateway. Use it to correlate a PromptGate token back to your own app's user / tenant / department model.
 
-| Route group | Required scope |
-|---|---|
-| AI Gateway endpoint exec (`POST /api/{uuid}/{slug}`) | `chat` |
-| AI Gateway chat completions (`POST /api/{uuid}/chat/completions`) | `chat` |
-| AI Wrapper (`POST /api/{uuid}/v1/chat/completions`, `GET /api/{uuid}/v1/models`) | `chat` |
-| Models discovery (`GET /api/{uuid}/models`) | `models` |
-| Admin / introspection (`GET /api/{uuid}/info`, `/endpoints`, `/tokens`) | `admin` |
-| Control Plane (`POST /api/control/mcp`) | `admin` |
-| API Gateway proxy (`ANY /api/{uuid}/proxy/...`) | `proxy` |
-| MCP (`POST /api/{uuid}/mcp`) | `mcp` |
+In the in-project UI it's a JSON textarea. The Management API accepts it as a structured object on token creation.
 
-A token can have **any combination** of scopes. The middleware checks that the token has the scope required by the route — anything else is irrelevant.
-
-| Token scopes | Can hit `/chat` | Can hit `/v1/models` | Can hit `/info` |
-|---|---|---|---|
-| `[chat]` | ✅ | ❌ | ❌ |
-| `[chat, models]` | ✅ | ✅ | ❌ |
-| `[admin]` | ❌ | ❌ | ✅ |
-| `[chat, admin]` | ✅ | ❌ | ✅ |
-
-## Creating a token
-
-Project sidebar → **API Tokens** → **+ New token**.
-
-![Token create — placeholder](#)
-
-| Field | Notes |
-|---|---|
-| **Name** | Descriptive — `Mobile App Prod`, `nightly-batch`, etc. |
-| **Environment** | `live` or `test`. Tags the token for log filtering and prefix. |
-| **Scopes** | Tick the scopes the token will need. Principle of least privilege. |
-
-After save, the **plaintext token is shown ONCE** in a yellow banner with a copy button.
-
-:::caution[Once-only display]
-PromptGate stores the SHA-256 hash and **discards the plaintext**. There is no recovery — if you lose it, rotate the token to mint a new plaintext (same row, new hash, old plaintext invalid).
-:::
-
-## Storage
-
-```
-api_tokens
-├── token_hash       SHA-256(plaintext) — what we compare against
-├── token_prefix     "pg_live_a1b2…" — short preview shown in UI
-├── env              "live" | "test"
-├── scopes           ["chat", "models"]
-├── last_used_at     updated on every successful auth
-├── is_active        false = revoked
-└── project_id       FK
+```json
+{
+  "app_user_id": 42,
+  "tenant": "acme-inc",
+  "department": "marketing"
+}
 ```
 
-Why SHA-256 and not bcrypt? Tokens are random 32-byte strings — entropy ~256 bits. bcrypt's slowness defends against weak passwords; tokens don't have that problem. SHA-256 is constant-time-comparable and fast enough to authenticate every request.
+The metadata is returned in:
 
-## Project scoping
+- The Management API create + rotate response body.
+- The Management API `GET /api/{uuid}/tokens` listing.
+- `gateway_logs.request_body` is never tagged with metadata — it stays a property of the *token*, not the request.
 
-A token belongs to **exactly one project**. The middleware resolves the token, then enforces:
+## Management API
 
-- The URL's `{uuid}` matches the token's `project_id` → 403 if not.
-- The required scope is in the token's scopes → 403 if not.
+Apps that mint tokens for their own end-users use `POST /api/{uuid}/admin/tokens` (gated by the `tokens:write` scope and the global management toggle). The body accepts every field listed above plus the legacy `scopes` override:
 
-So a `chat`-scoped token from Project A cannot hit Project B's `/api/B/...` even if the URL is correct.
-
-## Listing tokens
-
-Project sidebar → **API Tokens** shows:
-
-- Name, prefix, env
-- Scopes (chips)
-- `last_used_at`
-- Active / revoked status
-- Rotate / Revoke / Edit actions
-
-The **Edit** action lets you rename the token and adjust scopes. The plaintext is **not** shown — you can change scopes without seeing the secret.
-
-## Rotating
-
-Click **Rotate** on a token row.
-
-- A fresh plaintext is generated.
-- The hash is updated; the old plaintext is now invalid.
-- The new plaintext is shown once.
-- All other fields (name, scopes, env, last_used_at) are preserved.
-
-Useful when you suspect a token has leaked but want to keep the row + audit history.
-
-## Revoking
-
-Click **Revoke**. Sets `is_active = false`. The token is rejected on the next request with a 401.
-
-Revoking is **soft** (the row stays for audit). To delete entirely, use Tinker:
-
-```php
-\App\Models\ApiToken::query()->where('id', 42)->delete();
+```json
+{
+  "name": "Ada's app token",
+  "endpoint_ids": [12, 17],
+  "rate_limit_per_minute": 30,
+  "monthly_budget_usd_cap": 5.00,
+  "metadata": {
+    "app_user_id": 42,
+    "tenant": "acme-inc"
+  }
+}
 ```
 
-## Token API surface
-
-For programmatic introspection (admin scope):
-
-```http
-GET /api/{uuid}/tokens
-Authorization: Bearer <admin-scoped-token>
-```
-
-Returns each token's metadata (no plaintexts):
+Response (HTTP 201) contains the plaintext token *once* plus every input back:
 
 ```json
 {
   "ok": true,
-  "data": [
-    {
-      "id": 7,
-      "name": "Mobile App Prod",
-      "prefix": "pg_live_a1b2…",
-      "env": "live",
-      "scopes": ["chat"],
-      "is_active": true,
-      "last_used_at": "2026-05-06T10:14:22Z"
-    }
-  ]
+  "data": {
+    "token": "pg_live_...",
+    "uuid": "0a1b2c3d-...",
+    "name": "Ada's app token",
+    "scopes": ["chat", "models"],
+    "endpoint_ids": [12, 17],
+    "rate_limit_per_minute": 30,
+    "monthly_budget_usd_cap": 5.0,
+    "metadata": {"app_user_id": 42, "tenant": "acme-inc"},
+    "created_at": "2026-05-15T13:01:08+00:00",
+    "note": "Store this token now. It is shown only once."
+  }
 }
 ```
 
-## Audit
+When `scopes` is omitted, the response uses the project type's default set. Privilege-escalation guard still applies: a caller can only issue management scopes it already owns.
 
-Every token CRUD action writes to `audit_logs`:
+## Project-level kill switch
 
-- `token.created`
-- `token.rotated`
-- `token.revoked`
-- `token.deleted`
-
-Every successful authentication touches `last_used_at` but does NOT write an audit row (would be too noisy for high-traffic gateways). Auth failures DO write — `auth.token_invalid`, `auth.token_revoked`, `auth.scope_missing`.
-
-## Programmatic provisioning
-
-The **MCP Control Plane** has tools for token CRUD — useful for automation:
-
-- `pg_create_token(project_uuid, name, scopes, env)` → returns plaintext once
-- `pg_rotate_token(token_id)` → returns new plaintext, invalidates old
-- `pg_revoke_token(token_id)`
-
-See **[Control Plane API](/api/control-plane/)**.
-
-## Best practices
-
-- **Issue narrow tokens** — give a Mobile App a `[chat]` token, not `[chat, admin, mcp]`.
-- **Per-environment** — separate tokens for dev / staging / prod, prefixed appropriately.
-- **Per-application** — one token per consuming app makes revocation surgical.
-- **Rotate quarterly** — even uncompromised tokens should age out.
-- **Watch `last_used_at`** — tokens unused for 90+ days are candidates for revocation.
-- **Don't log them** — though they're hashed in DB, anyone with the plaintext gets in.
-
----
-
-Next: **[Guardrails](/security/guardrails/)**.
-
----
-
-> © Akyros Labs LLC. All rights reserved.
+Deactivating the **project** (`/projects` → three-dot menu → Deactivate) blocks **every** token in that project with `403 Project is inactive` at the auth-middleware layer, regardless of token state. Reactivating the project restores the previous traffic surface unchanged — token-level flags are never touched.
