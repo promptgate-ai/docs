@@ -117,3 +117,145 @@
   --sl-color-accent: var(--pg-accent);
   --sl-color-accent-high: oklch(0.95 0.04 128);
 }
+
+/* ---------------------------------------------------------------- */
+/* Sidebar polish — uppercase mono section labels, refined active   */
+/* state with left-bar marker.                                      */
+/* ---------------------------------------------------------------- */
+
+.sidebar-pane summary > span,
+.sidebar-pane li > a {
+  letter-spacing: -0.005em;
+}
+
+.sidebar-pane .group-label,
+.sidebar-pane summary {
+  font-family: var(--sl-font-system-mono);
+  font-size: 11px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--sl-color-gray-3);
+}
+
+.sidebar-pane li > a {
+  position: relative;
+  border-radius: 4px;
+  padding-block: 0.4rem;
+  transition: background 120ms, color 120ms;
+}
+
+:root[data-theme='light'] .sidebar-pane a[aria-current='page'] {
+  background: transparent;
+  color: var(--sl-color-text);
+  font-weight: 500;
+}
+:root[data-theme='light'] .sidebar-pane a[aria-current='page']::before {
+  content: '';
+  position: absolute;
+  left: -10px;
+  top: 6px;
+  bottom: 6px;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--pg-accent);
+}
+:root[data-theme='light'] .sidebar-pane a:hover {
+  background: var(--pg-accent-low);
+  color: var(--sl-color-text);
+}
+
+/* ---------------------------------------------------------------- */
+/* Content typography — slightly larger H1, calmer description,    */
+/* tighter H2/H3, more breathing room above section breaks.        */
+/* ---------------------------------------------------------------- */
+
+.sl-markdown-content h1,
+.sl-markdown-content > h1 {
+  font-size: clamp(28px, 3.6vw, 36px);
+  letter-spacing: -0.02em;
+  font-weight: 600;
+  line-height: 1.15;
+}
+
+.sl-markdown-content h2 {
+  margin-top: 2.4rem;
+  font-size: 22px;
+  letter-spacing: -0.012em;
+  font-weight: 600;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--sl-color-hairline);
+}
+
+.sl-markdown-content h3 {
+  margin-top: 1.8rem;
+  font-size: 17px;
+  letter-spacing: -0.008em;
+  font-weight: 600;
+}
+
+.sl-markdown-content p {
+  line-height: 1.65;
+}
+
+/* Lede paragraph — the first paragraph after the H1 reads as a
+   subtitle. Larger, lighter, room to breathe. */
+.pg-page-head + .sl-markdown-content > p:first-of-type,
+.sl-markdown-content > .pg-page-head + p {
+  font-size: 16px;
+  color: var(--sl-color-gray-2);
+  line-height: 1.6;
+}
+
+/* Code blocks — slightly tighter border + corner. */
+.sl-markdown-content :where(pre, .expressive-code) {
+  border-radius: 8px;
+}
+
+/* Tables — calmer headers + zebra rows. */
+.sl-markdown-content table {
+  font-size: 13.5px;
+}
+.sl-markdown-content table thead tr {
+  background: var(--sl-color-bg-nav);
+}
+.sl-markdown-content table th {
+  font-family: var(--sl-font-system-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--sl-color-gray-3);
+  font-weight: 500;
+}
+
+/* Top nav — drop the bottom hairline (Starlight ships it as
+   `border-bottom: 1px solid var(--sl-color-hairline-shade)` from
+   the scoped PageFrame.astro). We zero out the color; !important
+   is needed because Astro's scoped CSS gets a specificity boost
+   from its hash-class wrapper. */
+.header { border-bottom-color: transparent !important; }
+
+/* Splash landing — Starlight wraps the (now empty) PageTitle in a
+   <div class="content-panel"> and the Landing content in another.
+   The second one inherits a `border-top: 1px solid hairline` via
+   the `.content-panel + .content-panel` rule, which reads as a
+   stray divider on our hero. Scope by `main:has(.pg-landing)`:
+   hide the empty title-panel, kill the border on the next one. */
+main:has(.pg-landing) > .content-panel:first-of-type {
+  display: none;
+}
+main:has(.pg-landing) .content-panel + .content-panel {
+  border-top: 0 !important;
+}
+
+/* Pagination buttons — calmer in light mode, retain accent border. */
+:root[data-theme='light'] .pagination-links > a {
+  background: var(--sl-color-bg);
+  color: var(--sl-color-text);
+  border: 1px solid var(--sl-color-hairline);
+  transition: border-color 120ms, background 120ms;
+}
+:root[data-theme='light'] .pagination-links > a:hover {
+  background: var(--pg-accent-low);
+  border-color: var(--pg-accent);
+  color: var(--sl-color-text);
+}

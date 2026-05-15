@@ -1,0 +1,359 @@
+---
+/*
+ * PromptGate Docs — landing page hero + popular destinations.
+ * Replaces the Starlight `splash` hero for a richer two-column
+ * "search-first / quickstart-right" layout.
+ *
+ * (c) 2026 Akyros Labs LLC. All rights reserved.
+ */
+
+const quickstarts = [
+  {
+    href: '/getting-started/installation/',
+    label: 'Docker',
+    accent: 'oklch(0.96 0.03 235)',
+    icon: 'docker',
+  },
+  {
+    href: '/features/ai-wrapper/',
+    label: 'OpenAI SDK',
+    accent: 'oklch(0.96 0.06 155)',
+    icon: 'plug',
+  },
+  {
+    href: '/concepts/agent-proxy/',
+    label: 'Claude Code',
+    accent: 'oklch(0.95 0.06 35)',
+    icon: 'terminal',
+  },
+  {
+    href: '/api/overview/',
+    label: 'REST API',
+    accent: 'oklch(0.96 0.05 295)',
+    icon: 'api',
+  },
+];
+
+const destinations = [
+  {
+    href: '/getting-started/quick-start/',
+    title: 'New to PromptGate? Start here',
+    description: 'Install, log in, point your first SDK at the gateway.',
+  },
+  {
+    href: '/concepts/project-types/',
+    title: 'How projects work',
+    description: 'AI Gateway, AI Wrapper, API Gateway, MCP — pick the right project type.',
+  },
+  {
+    href: '/features/typed-variables/',
+    title: 'Typed input variables',
+    description: 'Per-endpoint variable whitelist with types and constraints.',
+  },
+  {
+    href: '/security/reversible-redaction/',
+    title: 'Reversible redaction',
+    description: 'PII never leaves the gateway — the LLM sees opaque tokens.',
+  },
+  {
+    href: '/features/routing-rules/',
+    title: 'Rule-based routing',
+    description: 'Pick a different model per request based on context.',
+  },
+  {
+    href: '/features/management-api/',
+    title: 'Management API',
+    description: 'Automate setup and operations from CI / IaC.',
+  },
+  {
+    href: '/cookbook/claude-code-through-promptgate/',
+    title: 'Claude Code through PromptGate',
+    description: 'Egress-control your coding agents with one base URL.',
+  },
+  {
+    href: '/security/secret-scanner/',
+    title: 'Secret scanner',
+    description: '18 well-known credential patterns blocked or tokenised at the gateway.',
+  },
+];
+---
+
+<section class="pg-landing not-content">
+  <div class="pg-hero">
+    <div class="pg-hero-left">
+      <h1>PromptGate Docs</h1>
+      <p class="pg-lede">
+        Self-host the gateway that sits between your apps and every AI provider.
+        Explore <a href="/getting-started/introduction/">guides</a>,
+        <a href="/concepts/architecture/">concepts</a>,
+        <a href="/features/ai-endpoints/">features</a>, and the
+        <a href="/api/overview/">REST API</a>.
+      </p>
+
+      <button class="pg-search" type="button" onclick="document.querySelector('site-search button[data-open-modal]')?.click() ?? document.querySelector('[aria-label*=earch]')?.click()">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5 L14 14"/></svg>
+        <span class="pg-search-text">Search or ask AI…</span>
+        <kbd class="pg-search-kbd">⌘K</kbd>
+      </button>
+    </div>
+
+    <aside class="pg-quickcard">
+      <div class="pg-quickcard-eyebrow">Quickstarts</div>
+      <div class="pg-quickcard-title">Get started</div>
+      <p class="pg-quickcard-sub">Run PromptGate locally and connect your first client in minutes.</p>
+      <div class="pg-quickcard-grid">
+        {quickstarts.map(q => (
+          <a class="pg-quicktile" href={q.href} style={`background:${q.accent}`}>
+            <div class="pg-quicktile-icon">
+              {q.icon === 'docker' && (
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="9" width="3" height="3"/><rect x="7" y="9" width="3" height="3"/><rect x="11" y="9" width="3" height="3"/><rect x="7" y="5" width="3" height="3"/><path d="M3 13 c0 3 3 5 7 5 c7 0 11 -3 12 -7 c-2 1 -3 1 -5 0"/></svg>
+              )}
+              {q.icon === 'plug' && (
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 2 v6 M15 2 v6 M6 8 h12 v3 a6 6 0 0 1 -12 0 z M12 17 v5"/></svg>
+              )}
+              {q.icon === 'terminal' && (
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 9 L9 12 L6 15 M11 15 H15"/></svg>
+              )}
+              {q.icon === 'api' && (
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 8 H20 M4 12 H20 M4 16 H20 M8 4 L7 20 M16 4 L15 20"/></svg>
+              )}
+            </div>
+            <span class="pg-quicktile-label">{q.label} <span aria-hidden="true">→</span></span>
+          </a>
+        ))}
+      </div>
+      <a class="pg-quickcard-template" href="/getting-started/installation/">Or read the full installation guide <span aria-hidden="true">→</span></a>
+    </aside>
+  </div>
+
+  <div class="pg-popular">
+    <div class="pg-popular-label">POPULAR DESTINATIONS</div>
+    <div class="pg-popular-grid">
+      {destinations.map(d => (
+        <a class="pg-popular-card" href={d.href}>
+          <div class="pg-popular-card-title">{d.title}</div>
+          <div class="pg-popular-card-desc">{d.description}</div>
+        </a>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .pg-landing {
+    /* Break out of Starlight's --sl-content-width (60rem) cap so the
+       hero + quickcard get real breathing room on wide screens. */
+    width: min(1400px, 96vw);
+    margin-inline: calc(50% - min(700px, 48vw));
+    padding: 24px 0 56px;
+  }
+  @media (max-width: 1100px) {
+    .pg-landing {
+      width: 100%;
+      margin-inline: 0;
+      padding-inline: clamp(16px, 4vw, 32px);
+    }
+  }
+
+  /* ---- Hero ---- */
+  .pg-hero {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 48px;
+    align-items: center;
+    min-height: 360px;
+    padding: 32px 0 56px;
+    position: relative;
+  }
+  .pg-hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(135deg, transparent 49.6%, color-mix(in oklch, var(--sl-color-text) 5%, transparent) 49.8%, color-mix(in oklch, var(--sl-color-text) 5%, transparent) 50.2%, transparent 50.4%);
+    pointer-events: none;
+    opacity: 0.5;
+  }
+  .pg-hero-left {
+    position: relative;
+    z-index: 1;
+  }
+  .pg-hero-left h1 {
+    font-size: clamp(36px, 5vw, 56px);
+    line-height: 1.05;
+    letter-spacing: -0.025em;
+    margin: 0 0 16px;
+    font-weight: 600;
+  }
+  .pg-lede {
+    font-size: 16px;
+    line-height: 1.55;
+    color: var(--sl-color-gray-2);
+    margin: 0 0 28px;
+    max-width: 460px;
+  }
+  .pg-lede a {
+    color: var(--sl-color-text);
+    text-decoration: underline;
+    text-decoration-color: var(--pg-accent);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 3px;
+    font-weight: 500;
+  }
+  .pg-lede a:hover { text-decoration-color: var(--pg-accent-hover); }
+
+  .pg-search {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    width: min(360px, 100%);
+    padding: 11px 14px;
+    background: var(--sl-color-bg);
+    color: var(--sl-color-gray-3);
+    border: 1px solid var(--sl-color-hairline);
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: border-color 120ms, background 120ms;
+    text-align: left;
+  }
+  .pg-search:hover {
+    border-color: var(--pg-accent);
+    background: var(--sl-color-bg-nav);
+  }
+  .pg-search-text { flex: 1; }
+  .pg-search-kbd {
+    font-family: var(--sl-font-system-mono);
+    font-size: 11px;
+    padding: 2px 6px;
+    background: var(--sl-color-bg-nav);
+    border: 1px solid var(--sl-color-hairline);
+    border-radius: 4px;
+    color: var(--sl-color-gray-3);
+  }
+
+  /* ---- Right quickcard ---- */
+  .pg-quickcard {
+    background: var(--sl-color-bg);
+    border: 1px solid var(--sl-color-hairline);
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 12px 32px color-mix(in oklch, var(--sl-color-text) 6%, transparent);
+    position: relative;
+    z-index: 1;
+  }
+  .pg-quickcard-eyebrow {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--sl-color-gray-3);
+    margin-bottom: 4px;
+  }
+  .pg-quickcard-title {
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    margin-bottom: 6px;
+  }
+  .pg-quickcard-sub {
+    font-size: 13px;
+    color: var(--sl-color-gray-2);
+    margin: 0 0 18px;
+  }
+  .pg-quickcard-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+  .pg-quicktile {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px 12px;
+    border-radius: 10px;
+    text-decoration: none;
+    color: var(--sl-color-text);
+    border: 1px solid color-mix(in oklch, var(--sl-color-text) 8%, transparent);
+    aspect-ratio: 1 / 1;
+    justify-content: space-between;
+    transition: transform 140ms ease, box-shadow 140ms ease;
+  }
+  .pg-quicktile:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px color-mix(in oklch, var(--sl-color-text) 14%, transparent);
+  }
+  .pg-quicktile-icon {
+    color: var(--sl-color-text);
+    opacity: 0.85;
+  }
+  .pg-quicktile-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--sl-color-text);
+  }
+  .pg-quickcard-template {
+    display: inline-block;
+    margin-top: 16px;
+    font-size: 13px;
+    color: var(--sl-color-gray-2);
+    text-decoration: none;
+  }
+  .pg-quickcard-template:hover { color: var(--sl-color-text); }
+
+  /* ---- Popular destinations ---- */
+  .pg-popular { margin-top: 24px; }
+  .pg-popular-label {
+    font-family: var(--sl-font-system-mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    color: var(--sl-color-gray-3);
+    background: var(--sl-color-bg-nav);
+    padding: 6px 10px;
+    border-radius: 4px;
+    display: inline-block;
+    margin-bottom: 16px;
+  }
+  .pg-popular-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+  }
+  .pg-popular-card {
+    display: block;
+    padding: 18px 18px 20px;
+    background: var(--sl-color-bg);
+    border: 1px solid var(--sl-color-hairline);
+    border-radius: 10px;
+    text-decoration: none;
+    color: var(--sl-color-text);
+    transition: border-color 120ms, transform 140ms;
+  }
+  .pg-popular-card:hover {
+    border-color: var(--pg-accent);
+    transform: translateY(-1px);
+  }
+  .pg-popular-card-title {
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    margin-bottom: 6px;
+    color: var(--sl-color-text);
+  }
+  .pg-popular-card-desc {
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--sl-color-gray-2);
+  }
+
+  /* ---- Responsive ---- */
+  @media (max-width: 960px) {
+    .pg-hero { grid-template-columns: 1fr; gap: 32px; }
+    .pg-popular-grid { grid-template-columns: repeat(2, 1fr); }
+    .pg-quickcard-grid { grid-template-columns: repeat(4, 1fr); }
+  }
+  @media (max-width: 560px) {
+    .pg-popular-grid { grid-template-columns: 1fr; }
+    .pg-quickcard-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>

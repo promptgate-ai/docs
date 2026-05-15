@@ -1,46 +1,9 @@
 ---
 title: PromptGate Documentation
-description: AI Gateway Platform — Secure provider routing, encrypted credentials, and centralized AI management.
+description: AI Gateway Platform — secure provider routing, encrypted credentials, and centralised AI management.
 template: splash
-hero:
-  tagline: The self-hosted AI gateway that sits between your applications and AI providers. Secure credentials, route requests, control budgets — all from one platform.
-  actions:
-    - text: Get Started
-      link: /getting-started/introduction/
-      icon: right-arrow
-    - text: View on GitHub
-      link: https://github.com/promptgate-ai/promptgate
-      icon: external
-      variant: minimal
 ---
 
-import { Card, CardGrid } from '@astrojs/starlight/components';
+import Landing from '../../components/Landing.astro';
 
-## Core capabilities
-
-<CardGrid>
-  <Card title="Secure credential storage" icon="lock">
-    Store provider API keys with AES-256-GCM encryption. Keys are shown once at creation and never exposed again. Your applications never touch raw provider keys.
-  </Card>
-  <Card title="Provider routing" icon="random">
-    Define provider templates that bind a provider, model, and settings into reusable configurations. Switch models across all endpoints by updating a single template.
-  </Card>
-  <Card title="Project isolation" icon="list-format">
-    Organize resources into projects with four types: AI Gateway, AI Wrapper, API Gateway, and MCP Gateway. Each project has its own credentials, templates, and access controls.
-  </Card>
-  <Card title="Self-hosted" icon="laptop">
-    Run PromptGate on your own infrastructure with Docker and FrankenPHP. Your data, your keys, your control. Community Edition under BSL 1.1 license.
-  </Card>
-</CardGrid>
-
-## Quick install
-
-```bash
-git clone https://github.com/promptgate-ai/promptgate.git
-cd promptgate
-docker compose up -d
-```
-
-Open `http://localhost:8000` and log in with `admin@promptgate.dev` / `admin`.
-
-Read the full [Installation guide](/getting-started/installation/) or jump to the [Quick Start](/getting-started/quick-start/).
+<Landing />

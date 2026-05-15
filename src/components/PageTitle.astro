@@ -1,0 +1,146 @@
+---
+/*
+ * PromptGate Docs — page header override.
+ *
+ * Adds a meta-row above the H1 with the section eyebrow (Starlight
+ * already exposes this as `entry.data.sidebar?.label`-context), the
+ * "Last updated" date, and a "Copy article" button that drops the
+ * raw markdown body of the current page on the clipboard.
+ *
+ * Splash pages (template: splash) skip the meta-row and render the
+ * default H1 only — the landing builds its own hero.
+ *
+ * (c) 2026 Akyros Labs LLC. All rights reserved.
+ */
+
+const route = Astro.locals.starlightRoute;
+const entry = route.entry;
+const isSplash = entry.data.template === 'splash';
+
+// Section eyebrow — first sidebar group's label this entry belongs to.
+const eyebrow = route.sidebar
+  .find((g: any) => g.type === 'group' && g.entries?.some((e: any) => e.href === route.id || e.entry?.id === entry.id))
+  ?.label;
+
+const lastUpdated: Date | undefined = route.lastUpdated;
+const formattedDate = lastUpdated
+  ? lastUpdated.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+  : null;
+
+const rawMarkdown = entry.body ?? '';
+---
+
+{isSplash ? (
+  /* The splash landing builds its own hero — suppress Starlight's H1
+     so we don't render a duplicate "PromptGate Documentation" above
+     the Landing component. */
+  null
+) : (
+  <div class="pg-page-head">
+    <div class="pg-page-head-meta">
+      {eyebrow && <span class="pg-eyebrow">{eyebrow}</span>}
+      <div class="pg-page-head-actions">
+        {formattedDate && (
+          <span class="pg-last-updated" title={lastUpdated?.toISOString()}>
+            <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M8 4 V8 L11 10"/></svg>
+            Last updated {formattedDate}
+          </span>
+        )}
+        <button class="pg-copy-article" type="button" data-markdown={rawMarkdown} aria-label="Copy this article as markdown">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="4" y="3" width="9" height="11" rx="1"/><path d="M2.5 11 V2.5 A1 1 0 0 1 3.5 1.5 H10"/></svg>
+          <span class="pg-copy-article-label">Copy article</span>
+        </button>
+      </div>
+    </div>
+    <h1 id={route.id} class="sl-page-title" data-page-title>{entry.data.title}</h1>
+  </div>
+)}
+
+<script>
+  document.addEventListener('click', (e) => {
+    const btn = (e.target as HTMLElement | null)?.closest<HTMLButtonElement>('.pg-copy-article');
+    if (!btn) return;
+    e.preventDefault();
+    const md = btn.dataset.markdown ?? '';
+    navigator.clipboard.writeText(md).then(() => {
+      const label = btn.querySelector('.pg-copy-article-label');
+      if (!label) return;
+      const original = label.textContent;
+      label.textContent = 'Copied';
+      btn.classList.add('is-copied');
+      setTimeout(() => {
+        label.textContent = original;
+        btn.classList.remove('is-copied');
+      }, 1500);
+    });
+  });
+</script>
+
+<style>
+  .pg-page-head {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 8px;
+  }
+  .pg-page-head-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .pg-eyebrow {
+    font-family: var(--sl-font-system-mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--sl-color-gray-3);
+    background: var(--sl-color-bg-nav);
+    padding: 5px 10px;
+    border-radius: 4px;
+  }
+  .pg-page-head-actions {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .pg-last-updated {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--sl-color-gray-3);
+    font-family: var(--sl-font-system-mono);
+  }
+  .pg-copy-article {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    background: var(--sl-color-bg);
+    color: var(--sl-color-text);
+    border: 1px solid var(--sl-color-hairline);
+    border-radius: 6px;
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: border-color 120ms, background 120ms;
+  }
+  .pg-copy-article:hover {
+    border-color: var(--pg-accent);
+    background: var(--sl-color-bg-nav);
+  }
+  .pg-copy-article.is-copied {
+    border-color: var(--pg-accent);
+    color: var(--pg-accent-ink);
+    background: var(--pg-accent-low);
+  }
+  /* Tighten H1 since it lives below a meta row now. */
+  .pg-page-head .sl-page-title {
+    margin-top: 4px;
+  }
+  @media (max-width: 560px) {
+    .pg-page-head-actions { margin-left: 0; width: 100%; }
+  }
+</style>

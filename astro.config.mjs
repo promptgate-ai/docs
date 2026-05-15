@@ -8,6 +8,7 @@ export default defineConfig({
 		starlight({
 			title: 'PromptGate',
 			description: 'AI Gateway Platform — Documentation',
+			lastUpdated: true,
 			logo: {
 				src: './src/assets/logo-icon.png',
 				alt: 'PromptGate',
@@ -21,6 +22,8 @@ export default defineConfig({
 			customCss: ['./src/styles/custom.css'],
 			components: {
 				Footer: './src/components/Footer.astro',
+				PageTitle: './src/components/PageTitle.astro',
+				Hero: './src/components/Hero.astro',
 			},
 			head: [
 				{ tag: 'meta', attrs: { name: 'copyright', content: '© Akyros Labs LLC. All rights reserved.' } },
