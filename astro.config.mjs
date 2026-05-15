@@ -139,6 +139,7 @@ export default defineConfig({
 					items: [
 						{ label: 'Admin Area', slug: 'admin/overview' },
 						{ label: 'Webhooks', slug: 'admin/webhooks' },
+						{ label: 'Model Pricing', slug: 'admin/model-pricing' },
 						{ label: 'Backup / Export', slug: 'admin/backup' },
 					],
 				},
