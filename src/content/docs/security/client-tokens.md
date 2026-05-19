@@ -39,13 +39,13 @@ The allowlist is stored on `api_tokens.endpoint_ids` as a JSON array of ints. Th
 
 ## Per-token limits
 
-Three independent caps can be set per token; **null = fall back to the endpoint-level setting**, **set = take min(token, endpoint)** so the tighter cap always wins.
+Three independent caps can be set per token. **Per-field override semantics**: a field set on the token *replaces* the endpoint's value for that field; `null` falls back to the endpoint default. Never `min()`, never both — a permissive token can grant more headroom than the endpoint, a strict one tightens it.
 
 | Field | Effect |
 |---|---|
-| `rate_limit_per_minute` | Token-keyed bucket evaluated in addition to the endpoint bucket. Either bucket can return 429. |
-| `rate_limit_per_hour` | Token-keyed hour bucket. |
-| `monthly_budget_usd_cap` | Sum of `cost_usd` from `gateway_logs` for this token in the current calendar month. When it exceeds the cap the request fails with 422 *before* the provider call. |
+| `rate_limit_per_minute` | Token-keyed bucket. Returns 429 + `Retry-After` when tripped. |
+| `rate_limit_per_hour` | Token-keyed hour bucket. Same surface. |
+| `monthly_budget_usd_cap` | **Pre-flight kill-switch**: sum of `cost_usd` from `gateway_logs` for this token in the current calendar month, **plus** the estimated cost of the current request. If the sum would breach the cap, refuses with **402 Payment Required** before the provider call. Enforced on **all surfaces** — AI Gateway endpoints, the AI Wrapper's `/v1/chat/completions`, and the Agent Proxy's `/v1/messages` / `/v1/responses`. See [Budgets](/security/budgets/) for the full pre-flight semantics. |
 
 ## Lifecycle states
 

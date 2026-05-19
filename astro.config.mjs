@@ -153,6 +153,7 @@ export default defineConfig({
 						{ label: 'Proxy API', slug: 'api/proxy' },
 						{ label: 'MCP API', slug: 'api/mcp' },
 						{ label: 'Control Plane API', slug: 'api/control-plane' },
+						{ label: 'Management API', slug: 'api/management' },
 						{ label: 'Errors', slug: 'api/errors' },
 					],
 				},

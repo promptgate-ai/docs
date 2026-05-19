@@ -3,7 +3,7 @@ title: API Overview
 description: Inventory of every public API surface PromptGate exposes.
 ---
 
-PromptGate has **five public API surfaces**, each with its own URL space, scope requirement, and request/response shape:
+PromptGate has **six public API surfaces**, each with its own URL space, scope requirement, and request/response shape:
 
 | Surface | Path prefix | Scope | Project type |
 |---|---|---|---|
@@ -12,6 +12,7 @@ PromptGate has **five public API surfaces**, each with its own URL space, scope 
 | **[Proxy API](/api/proxy/)** | `/api/{uuid}/proxy/{slug}/{any?}` | `proxy` | `api_gateway` |
 | **[MCP API](/api/mcp/)** | `/api/{uuid}/mcp` | `mcp` | `ai_gateway` (Bridge) or `mcp_gateway` |
 | **[Control Plane API](/api/control-plane/)** | `/api/control/mcp` | `admin` | global |
+| **[Management API](/api/management/)** | `/api/{uuid}/admin/tokens` <br/> `/api/{uuid}/admin/endpoints` | `tokens:write` / `endpoints:write` | any |
 
 Plus per-project introspection endpoints under `admin` scope:
 

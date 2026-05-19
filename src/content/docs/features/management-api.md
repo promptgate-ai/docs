@@ -3,7 +3,10 @@ title: Management API
 description: Programmatic admin surface for minting per-end-user tokens, rotating them, and revoking them. Bearer-authenticated, gated by an explicit kill-switch in admin settings.
 ---
 
-The Management API lets your application **mint, rotate, and revoke** PromptGate API tokens programmatically — typically one token per end-user of your downstream app, so each user gets isolated logs, budgets, and rate limits.
+The Management API lets your application **provision and maintain** PromptGate programmatically — typically from your own backend (HostAtlas / BlogForge / StackDeck etc.) so each tenant gets isolated logs, budgets, and rate limits without anyone clicking around in the UI. Two write surfaces:
+
+- **Tokens** (`tokens:write` scope) — mint, rotate, revoke per-user API tokens
+- **Endpoints** (`endpoints:write` scope) — create, update, deactivate AI Gateway endpoints
 
 ## The threat model
 
@@ -97,6 +100,51 @@ DELETE /api/{projectUuid}/admin/tokens/{tokenUuid}
 
 Marks the target token inactive. A token cannot revoke itself — use a different caller (or rotate first).
 
+## Endpoints
+
+`endpoints:write` scope. Same toggle (`Management REST API`) and throttle (30 req/min) as the tokens surface. Reuses the same internal service as the web UI, so a version snapshot is recorded on every create / update and validation rules are identical.
+
+### Create an endpoint
+
+```http
+POST /api/{projectUuid}/admin/endpoints
+Authorization: Bearer pg_live_<bootstrap-token>
+Content-Type: application/json
+
+{
+  "name": "Summarise",
+  "provider_model": "gpt-4o-mini",
+  "credential_id": 7,
+  "temperature": 0.2,
+  "max_output_tokens": 500,
+  "prompt": "You are a concise summariser.",
+  "user_prompt_template": "Summarise: {{input}}",
+  "monthly_budget_usd": 10.00,
+  "estimated_cost_per_1k_tokens_usd": 0.0020
+}
+```
+
+Either `provider_template_id` **or** `provider_model + credential_id` is required. `input_schema`, `output_schema`, `variables` and `failover` accept native JSON arrays / objects (no string-encoding needed — the REST surface is JSON-native, unlike the form-encoded web UI).
+
+Returns `201 Created` with the full endpoint payload including the generated `uuid` and `slug` (slug auto-derived from `name`).
+
+### Update an endpoint
+
+```http
+PUT /api/{projectUuid}/admin/endpoints/{endpointUuid}
+```
+
+**Full PUT semantics** — every field the service writes is overwritten. Pass the complete intended state. A new `endpoint_version` snapshot is recorded; old versions remain available for restore through the web UI.
+
+### Deactivate / activate
+
+```http
+PATCH /api/{projectUuid}/admin/endpoints/{endpointUuid}/deactivate
+PATCH /api/{projectUuid}/admin/endpoints/{endpointUuid}/activate
+```
+
+Soft toggle — deactivated endpoints return 404 to gateway traffic but configuration, logs, and versions are preserved.
+
 ## Hardening checklist
 
 - Set up an **IP allowlist** on the bootstrap token by deploying it from a known network.
@@ -114,6 +162,10 @@ Every action writes a row to `audit_logs`:
 | `token.created` | ok | Successful creation |
 | `token.rotated` | warn | Rotation |
 | `token.revoked` | warn | Revoke |
+| `endpoint.created` | ok | Endpoint provisioned |
+| `endpoint.updated` | info | Endpoint config changed |
+| `endpoint.deactivated` | warn | Endpoint disabled |
+| `endpoint.activated` | info | Endpoint re-enabled |
 | `settings.management.api` | warn | Toggle flipped |
 | `settings.management.mcp` | warn | Toggle flipped |
 

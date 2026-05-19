@@ -23,37 +23,43 @@ A non-exhaustive index of audit event keys:
 
 | Event | When |
 |---|---|
-| `project.created` | |
-| `project.updated` | |
-| `project.deleted` | |
+| `project.created` | A new project shell was provisioned |
+| `project.updated` | Name, env or project-level settings changed |
+| `project.activated` | Reactivated after a previous deactivate — traffic resumes |
+| `project.deactivated` | Project marked inactive — every token returns 403 until reactivated |
+| `project.deleted` | Project record removed (rare; manual operator action) |
 
 ### Endpoints (AI Gateway, API Gateway)
 
 | Event | When |
 |---|---|
-| `endpoint.created` |  |
-| `endpoint.updated` |  |
-| `endpoint.deactivated` |  |
-| `api_gateway_endpoint.created` | |
-| `api_gateway_endpoint.updated` | |
+| `endpoint.created` | New AI Gateway endpoint (wizard or Management API) |
+| `endpoint.updated` | Endpoint config changed — prompts, routing, limits, schemas |
+| `endpoint.deactivated` | Endpoint flipped to `is_active = false` (returns 404 on call) |
+| `api_gateway_endpoint.created` | New HTTP-proxy endpoint configured in an API Gateway project |
+| `api_gateway_endpoint.updated` | Method allowlist, headers, auth-mode, or rate caps changed |
 
 ### Credentials
 
 | Event | When |
 |---|---|
-| `credential.created` | |
-| `credential.updated` | |
-| `credential.deactivated` | |
-| `credential.deleted` | |
+| `credential.created` | New provider API key stored (encrypted at rest) |
+| `credential.updated` | Name or label changed (the secret itself uses `credential.rotated`) |
+| `credential.rotated` | New secret minted; previous hash invalidated immediately |
+| `credential.deactivated` | Operator pushed pause — endpoints using it will fail-over or 503 |
+| `credential.deleted` | Hard delete; rare and irreversible |
 
 ### Tokens
 
 | Event | When |
 |---|---|
-| `token.created` | |
-| `token.rotated` | |
-| `token.revoked` | |
-| `token.deleted` | |
+| `token.created` | New API token issued; plaintext shown once |
+| `token.updated` | Name, allowlist, per-token caps, or metadata changed |
+| `token.rotated` | Secret regenerated; prior bearer invalid immediately |
+| `token.activated` | Reactivated after a previous deactivate |
+| `token.deactivated` | Soft-disable — `401` on the gateway, reversible |
+| `token.revoked` | Same effect as deactivate but framed as permanent in the UI |
+| `token.deleted` | Hard delete; rare and irreversible |
 
 ### Guardrails
 
@@ -67,41 +73,52 @@ A non-exhaustive index of audit event keys:
 
 | Event | When |
 |---|---|
-| `provider.enabled` | |
-| `provider.disabled` | |
+| `provider.enabled` | Provider toggled on globally (becomes routable) |
+| `provider.disabled` | Provider toggled off — endpoints using it return 503 |
 
 ### MCP Servers (mcp_gateway)
 
 | Event | When |
 |---|---|
-| `mcp_server.created` | |
-| `mcp_server.updated` | |
-| `mcp_server.deactivated` | |
+| `mcp_server.created` | New upstream MCP server configured |
+| `mcp_server.updated` | URL, auth-mode or tool-allowlist changed |
+| `mcp_server.deactivated` | Server flipped inactive — JSON-RPC traffic to it 404s |
 
 ### OAuth Connections
 
 | Event | When |
 |---|---|
-| `oauth_connection.created` | |
-| `oauth_connection.connect_initiated` | User clicked "Connect" |
-| `oauth_connection.connected` | Token exchange succeeded |
-| `oauth_connection.callback_error` | Provider returned `error=...` |
+| `oauth_connection.created` | Connection record created (not yet linked to a provider account) |
+| `oauth_connection.connect_initiated` | User clicked "Connect" — redirected to authorize URL |
+| `oauth_connection.connected` | Token exchange succeeded; refresh token stored |
+| `oauth_connection.callback_error` | Provider returned `error=...` on the redirect |
 | `oauth_connection.exchange_failed` | Token exchange HTTP failure |
-| `oauth_connection.disconnected` | Tokens cleared |
-| `oauth_connection.deleted` | |
+| `oauth_connection.disconnected` | Tokens cleared but connection record kept |
+| `oauth_connection.deleted` | Connection record hard-deleted |
 
 ### Webhooks
 
 | Event | When |
 |---|---|
-| `webhook.created` | |
-| `webhook.test` | "Send test" button used |
+| `webhook.created` | New webhook subscription registered |
+| `webhook.updated` | URL, secret, event-subscriptions or active flag changed |
+| `webhook.test` | "Send test" button used in the webhook detail page |
+| `webhook.deleted` | Subscription removed |
+
+### Model Pricing (admin)
+
+| Event | When |
+|---|---|
+| `pricing.refreshed` | `php artisan pricing:refresh` pulled the LiteLLM catalogue (cron or admin button) |
+| `pricing.saved` | Operator added a manual pricing row via the admin UI |
+| `pricing.updated` | Existing pricing row edited — auto rows flip to `manual` on edit |
+| `pricing.deleted` | Pricing row removed |
 
 ### Backup / Export
 
 | Event | When |
 |---|---|
-| `backup.exported` | A ZIP was downloaded |
+| `backup.exported` | A ZIP archive was downloaded |
 
 ### Control Plane (write tools, tagged `via=mcp_control_plane`)
 

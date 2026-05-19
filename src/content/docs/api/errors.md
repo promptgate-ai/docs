@@ -27,10 +27,11 @@ The `ok: false` boolean is the canonical "this is an error" signal. Everything e
 |---|---|---|
 | **400 Bad Request** | Wrong project type for this surface (e.g. `/v1/chat/completions` against an `ai_gateway` project), malformed body. | Don't retry. Fix the client. |
 | **401 Unauthorized** | Missing / malformed / invalid token, token revoked. | Refresh the token. Don't retry with the same one. |
+| **402 Payment Required** | Pre-flight budget kill-switch — the request's estimated cost would push month-to-date spend over a monthly cap (endpoint `monthly_budget_usd` or token `monthly_budget_usd_cap`). The upstream call was never made. | Wait for next month, raise the cap, or wait for spend to roll off. |
 | **403 Forbidden** | Token belongs to a different project, or lacks the required scope. | Use a token with the right scope or reach out for one. |
 | **404 Not Found** | Endpoint slug doesn't exist or is inactive. Unknown alias in Wrapper. | Don't retry; the resource is gone. |
 | **405 Method Not Allowed** | API Gateway endpoint's `allowed_methods` doesn't include the request's method. | Don't retry. |
-| **422 Unprocessable Entity** | Validation failure: input schema, content length, PII block, prompt injection, keyword blocklist, budget cap, SSRF block. | Don't retry; fix the input. |
+| **422 Unprocessable Entity** | Validation failure: input schema, content length, PII block, prompt injection, keyword blocklist, per-request token limit, SSRF block. | Don't retry; fix the input. |
 | **429 Too Many Requests** | Rate limit hit (per-minute or per-hour). | Wait `Retry-After` seconds, then retry. |
 | **500 Internal Server Error** | Unexpected exception. Should never see this — file an issue. | Retry once after a delay; if persists, report. |
 | **502 Bad Gateway** | Upstream provider failure after failover, output schema validation failure, OAuth refresh failure, upstream HTTP unreachable. | Retry with exponential backoff. |
@@ -50,8 +51,9 @@ The `ok: false` boolean is the canonical "this is an error" signal. Everything e
 | `This project is not an AI Gateway. Use /api/{uuid}/v1/chat/completions for AI Wrapper projects.` | Wrong project type. |
 | `Endpoint 'foo' not found or inactive.` | Slug doesn't exist or `is_active=false`. |
 | `Rate limit exceeded.` | 429 with `Retry-After` header + body fields `scope` and `retry_after`. |
-| `Request exceeds endpoint per-request token limit: ~12000 tokens estimated, cap is 8000.` | Budget per-request cap. |
-| `Endpoint monthly budget exhausted: ~$24.99 spent, budget $25.00. Resets at the start of next month.` | Budget monthly cap. |
+| `Request exceeds endpoint per-request token limit: ~12000 tokens estimated, cap is 8000.` | Per-request token cap (422). |
+| `Endpoint monthly budget would be exceeded: ~$24.99 spent + ~$0.05 estimated for this request, budget $25.00. Resets at the start of next month.` | Endpoint pre-flight budget gate (**402**). |
+| `Token monthly budget would be exceeded: ~$4.99 spent + ~$0.02 estimated for this request, cap $5.00. Resets at the start of next month.` | Token-level pre-flight budget gate (**402**), enforced cross-surface. |
 | `Request blocked: E-Mail detected in input.` | PII filter, block mode. |
 | `Request blocked: prompt injection pattern detected.` | Prompt injection guardrail. |
 | `Request blocked: keyword 'foo' detected in input.` | Keyword blocklist. |
