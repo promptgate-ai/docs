@@ -16,24 +16,28 @@ This recipe routes Claude Code's traffic through your PromptGate instance. The r
 
 Projects → **Create project** → name it (e.g. `Engineering Egress`), pick **Agent Proxy** as the type. Default-secure guardrails (Reversible Redaction, Secret Scanner) become available under the Guardrails tab.
 
-### 2. Enable the Anthropic provider in the wrapper
+### 2. Enable the Anthropic provider
 
-Under the project's **Providers** sidebar entry, toggle Anthropic on and pick the credential you set up.
+On the project's **Setup → Providers** tab, toggle Anthropic on and pick the credential you set up.
 
-### 3. Issue an API token
+### 3. Quick-issue a token (one-click) — optional but recommended
 
-**API Tokens → New token** with the `chat` scope. Copy the plaintext (`pg_live_…`) — it's only shown once.
+**Setup → Overview → Quick setup · Local token → Generate local token**. PromptGate mints a fresh chat-scoped token, fills it directly into each agent's config snippet on the page, and shows it exactly once. Just click **Copy** on the Claude Code snippet and paste into your shell.
+
+The token shows up as `local · <hostname> · <YYYY-MM-DD HH:MM>` on the Tokens page — revoke any time.
+
+If you'd rather mint manually: **API Tokens → New token** with the `chat` scope and copy the plaintext.
 
 ### 4. Point Claude Code at PromptGate
 
-In whatever shell you launch Claude Code from:
+From the Quick-setup card on the Setup page, click Copy on the Claude Code snippet:
 
 ```bash
-export ANTHROPIC_BASE_URL="https://your-promptgate-host/api/<project-uuid>"
-export ANTHROPIC_AUTH_TOKEN="pg_live_..."
+ANTHROPIC_BASE_URL=https://your-promptgate-host/api/<project-uuid>
+ANTHROPIC_AUTH_TOKEN=pg_live_...
 ```
 
-Restart Claude Code. From its perspective nothing changed — it's still calling the Anthropic Messages API at `/v1/messages`.
+Paste in your shell, restart Claude Code. From its perspective nothing changed — it's still calling the Anthropic Messages API at `/v1/messages`.
 
 ### 5. Verify
 
