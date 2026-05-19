@@ -1,9 +1,9 @@
 ---
 title: Guardrails
-description: Pluggable input checks (PII, prompt injection, blocklist, content length) with 3-level inheritance.
+description: Pluggable input checks (PII, prompt injection, blocklist, content length) with 4-level inheritance — Global, Project, Endpoint, Token.
 ---
 
-A **guardrail** is a check that runs against every chat request before the provider is called. PromptGate ships four built-in guardrails and a 3-level inheritance model for configuring them.
+A **guardrail** is a check that runs against every chat request before the provider is called. PromptGate ships four built-in guardrails and a 4-level inheritance model for configuring them.
 
 ## The four built-ins
 
@@ -16,25 +16,28 @@ A **guardrail** is a check that runs against every chat request before the provi
 
 Each one has its own page with the detection rules, configuration, and edge cases.
 
-## 3-level inheritance
+## 4-level inheritance
 
-Guardrail rules are defined at three scopes. They merge from broadest to narrowest:
+Guardrail rules are defined at four scopes. They merge from broadest to narrowest:
 
 ```
-Global   (admin → Guardrails)
+Global    (admin → Guardrails)
    ↓
-Project  (project sidebar → Guardrails)
+Project   (project sidebar → Guardrails)
    ↓
-Endpoint (endpoint wizard → Guardrails tab)  [coming]
+Endpoint  (endpoint wizard → Guardrails tab)
+   ↓
+Token     (API token detail → Guardrails tab)
 ```
 
 For each guardrail key (e.g. `pii_filter`):
 
 - Global config is the **default**.
-- Project config **overrides** global. Setting `pii_filter.enabled = false` at project scope turns it off everywhere in that project, even if global has it on.
-- Endpoint config (when wired) overrides project.
+- Project config **overrides** global per field. Setting `pii_filter.enabled = false` at project scope turns it off everywhere in that project, even if global has it on.
+- Endpoint config overrides project per field.
+- Token config overrides everything per field — useful for multi-tenant patterns where one bearer token = one of your end-users and they each need different strictness (`tenant-A` needs PII redaction, `tenant-B` is allowed PII because they signed a DPA, etc.).
 
-The merging is shallow — at each level you replace the entire rule (not deep-merge fields). So if you want to inherit project's PII config but tweak `mode` for one endpoint, copy the whole rule down and edit `mode`.
+Merging is **per field** — within a guardrail's config object, only the keys present at a level override; the rest cascade up. Same semantics as token-level rate-limits and budgets (per-field override, never `min()`, never both — a permissive token can grant more headroom, a strict one tightens it).
 
 ## Where guardrails run
 
