@@ -5,7 +5,9 @@ description: Pluggable input checks (PII, prompt injection, blocklist, content l
 
 A **guardrail** is a check that runs against every chat request before the provider is called. PromptGate ships four built-in guardrails and a 4-level inheritance model for configuring them.
 
-## The four built-ins
+## The built-ins
+
+**Content guardrails** (text-level, run pre- / post-provider):
 
 | Guardrail | What it does | Modes |
 |---|---|---|
@@ -13,8 +15,17 @@ A **guardrail** is a check that runs against every chat request before the provi
 | **[Prompt Injection](/security/prompt-injection/)** | Scans for known jailbreak / instruction-override patterns | `block` |
 | **[Keyword Blocklist](/security/keyword-blocklist/)** | Project-defined word/phrase list | `block` |
 | **[Content Length](/security/content-length/)** | Min / max input length cap | `block` (rejects with 422) |
+| **[Reversible Redaction](/security/reversible-redaction/)** | Tokenise PII before the LLM call, restore on the way back | egress |
+| **[Secret Scanner](/security/secret-scanner/)** | Block / redact 18 well-known credential patterns (AWS / GitHub / Slack / OpenAI / …) | `block` / `redact` |
 
-Each one has its own page with the detection rules, configuration, and edge cases.
+**Policy guardrails** (context-level, run at auth middleware time):
+
+| Guardrail | What it does | Block status |
+|---|---|---|
+| **IP Allowlist** | Reject the request when the client IP doesn't match any configured CIDR. IPv4 + IPv6 via Symfony's `IpUtils::checkIp` | 403 |
+| **Time Window** | Reject outside the configured weekly hour windows (per-day, with timezone, overnight wrap-around supported) | 403 |
+
+Policy guardrails implement the same `GuardrailContract` (for registry / UI / cascade) plus the dedicated `PolicyGuardrailContract` (request-level `precheck()` instead of text-level `process()`). The auth middleware calls `GuardrailService::runPolicy()` right after resolving the token — no message content needed.
 
 ## 4-level inheritance
 

@@ -48,8 +48,8 @@ Seven independent caps can be set per token. **Per-field override semantics**: a
 | `monthly_budget_usd_cap` | **Pre-flight kill-switch**: month-to-date `cost_usd` + estimated cost of the current request. If the sum would breach the cap, refuses with **402 Payment Required**. Cross-surface (Gateway / Wrapper / Agent Proxy). |
 | `daily_token_cap` | **Pre-flight raw-token cap**: sum of `total_tokens` for today + estimated `prompt + max_output` tokens for this request. 402 on breach. Resets at midnight in `APP_TIMEZONE`. |
 | `daily_budget_usd_cap` | Same idea, USD-denominated. 402 on breach. |
-| `ip_allowlist` | List of plain IPs / CIDRs (IPv4 + IPv6). When set, the token is only valid from a matching client IP. 403 from auth middleware otherwise. |
-| `time_window` | Per-weekday hour windows with timezone — e.g. `{tz: "Europe/Berlin", windows: [{days: [1,2,3,4,5], from: "08:00", to: "18:00"}]}`. Supports overnight wrap-around. 403 outside the window. |
+
+**IP allowlist and time-of-day restrictions are not token columns — they're [policy guardrails](/security/guardrails/) that flow through the 4-level merge cascade** (Global → Project → Endpoint → Token). A `time_window` set at project level applies to every token in the project; a token can override per field. Same pattern as PII / secret-scanner / etc.
 
 ## Lifecycle states
 
