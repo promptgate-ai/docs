@@ -39,13 +39,17 @@ The allowlist is stored on `api_tokens.endpoint_ids` as a JSON array of ints. Th
 
 ## Per-token limits
 
-Three independent caps can be set per token. **Per-field override semantics**: a field set on the token *replaces* the endpoint's value for that field; `null` falls back to the endpoint default. Never `min()`, never both — a permissive token can grant more headroom than the endpoint, a strict one tightens it.
+Seven independent caps can be set per token. **Per-field override semantics**: a field set on the token *replaces* the endpoint's value for that field; `null` falls back to the endpoint default. Never `min()`, never both — a permissive token can grant more headroom than the endpoint, a strict one tightens it.
 
 | Field | Effect |
 |---|---|
 | `rate_limit_per_minute` | Token-keyed bucket. Returns 429 + `Retry-After` when tripped. |
 | `rate_limit_per_hour` | Token-keyed hour bucket. Same surface. |
-| `monthly_budget_usd_cap` | **Pre-flight kill-switch**: sum of `cost_usd` from `gateway_logs` for this token in the current calendar month, **plus** the estimated cost of the current request. If the sum would breach the cap, refuses with **402 Payment Required** before the provider call. Enforced on **all surfaces** — AI Gateway endpoints, the AI Wrapper's `/v1/chat/completions`, and the Agent Proxy's `/v1/messages` / `/v1/responses`. See [Budgets](/security/budgets/) for the full pre-flight semantics. |
+| `monthly_budget_usd_cap` | **Pre-flight kill-switch**: month-to-date `cost_usd` + estimated cost of the current request. If the sum would breach the cap, refuses with **402 Payment Required**. Cross-surface (Gateway / Wrapper / Agent Proxy). |
+| `daily_token_cap` | **Pre-flight raw-token cap**: sum of `total_tokens` for today + estimated `prompt + max_output` tokens for this request. 402 on breach. Resets at midnight in `APP_TIMEZONE`. |
+| `daily_budget_usd_cap` | Same idea, USD-denominated. 402 on breach. |
+| `ip_allowlist` | List of plain IPs / CIDRs (IPv4 + IPv6). When set, the token is only valid from a matching client IP. 403 from auth middleware otherwise. |
+| `time_window` | Per-weekday hour windows with timezone — e.g. `{tz: "Europe/Berlin", windows: [{days: [1,2,3,4,5], from: "08:00", to: "18:00"}]}`. Supports overnight wrap-around. 403 outside the window. |
 
 ## Lifecycle states
 

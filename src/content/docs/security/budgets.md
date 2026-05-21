@@ -12,8 +12,10 @@ This is the "Baar-style" kill-switch: enforcement before the bytes leave the hos
 | Per-request token cap | `usage_hard_limit_tokens` | Per-endpoint | 422 |
 | Endpoint monthly USD budget | `monthly_budget_usd` × `estimated_cost_per_1k_tokens_usd` | Per-endpoint | **402** |
 | Token monthly USD budget | `monthly_budget_usd_cap` on the API token | **All surfaces** — Gateway, Wrapper, Agent Proxy | **402** |
+| Token daily USD budget | `daily_budget_usd_cap` on the API token | **All surfaces** | **402** |
+| Token daily token cap | `daily_token_cap` on the API token (raw token count, not USD) | **All surfaces** | **402** |
 
-All are optional — `null` means unlimited.
+All are optional — `null` means unlimited. Daily caps reset at 00:00 in the operator's `APP_TIMEZONE`; monthly at `startOfMonth()`.
 
 ## Per-request token cap
 
