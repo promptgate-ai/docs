@@ -165,6 +165,15 @@ export default defineConfig({
 					],
 				},
 				{
+					label: 'pgfuzz — Recall Suite',
+					items: [
+						{ label: 'Overview', slug: 'pgfuzz/overview' },
+						{ label: 'pgfuzz pii', slug: 'pgfuzz/pii' },
+						{ label: 'pgfuzz secrets', slug: 'pgfuzz/secrets' },
+						{ label: 'Roadmap', slug: 'pgfuzz/roadmap' },
+					],
+				},
+				{
 					label: 'Cookbook',
 					items: [
 						{ label: 'Use OpenAI via the Gateway', slug: 'cookbook/openai-via-gateway' },
