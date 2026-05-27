@@ -9,7 +9,7 @@ description: Phase 2 subcommands and distribution improvements for pgfuzz, lined
 
 | Command | What it tests | Mechanism |
 |---|---|---|
-| **`pgfuzz injection`** | Prompt-injection patterns — DAN, "ignore previous instructions", system-prompt-leak, role-play override | Curated corpus of known jailbreak strings + synth variations |
+| ~~`pgfuzz injection`~~ | ✅ Shipped 2026-05-27 — see [pgfuzz injection](/pgfuzz/injection/). Ships 7 categories × direct / wrapped / obfuscated variants. | Curated stems × variant transforms |
 | **`pgfuzz budget`** | Pre-flight 402 compliance — fires payloads of known cost until the cap, expects 402 at the correct token / dollar boundary | Calibrated payloads + `/admin/tokens` to mint a cap-bounded token |
 | **`pgfuzz ratelimit`** | Burst N/min, expect 429 with a correct `Retry-After` header | Time-bucketed firing + header parse |
 | **`pgfuzz policy`** | IP allowlist + time-window enforcement | `X-Forwarded-For` spoofing + per-request `--simulate-clock` flag |

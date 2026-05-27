@@ -170,6 +170,7 @@ export default defineConfig({
 						{ label: 'Overview', slug: 'pgfuzz/overview' },
 						{ label: 'pgfuzz pii', slug: 'pgfuzz/pii' },
 						{ label: 'pgfuzz secrets', slug: 'pgfuzz/secrets' },
+						{ label: 'pgfuzz injection', slug: 'pgfuzz/injection' },
 						{ label: 'Roadmap', slug: 'pgfuzz/roadmap' },
 					],
 				},

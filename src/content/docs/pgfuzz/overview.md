@@ -72,7 +72,7 @@ When PromptGate 1.0 lands publicly, pgfuzz flips public and ships pre-built bina
 |---|---|---|
 | [`pgfuzz pii`](/pgfuzz/pii/) | PII Filter recall | ✅ MVP |
 | [`pgfuzz secrets`](/pgfuzz/secrets/) | Secret Scanner recall | ✅ MVP |
-| `pgfuzz injection` | Prompt-injection patterns | 📋 |
+| [`pgfuzz injection`](/pgfuzz/injection/) | Prompt-injection patterns (7 categories × direct/wrapped/obfuscated variants) | ✅ |
 | `pgfuzz budget` | Pre-flight 402 compliance | 📋 |
 | `pgfuzz ratelimit` | 429 + Retry-After behaviour | 📋 |
 | `pgfuzz policy` | IP allowlist + time-window enforcement | 📋 |
