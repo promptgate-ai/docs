@@ -32,20 +32,75 @@ The endpoint binds to a connection via `oauth_connection_id`, and the proxy inje
 
 ## Quick-Fill presets
 
-The connection create form has six built-in presets:
+The connection create form ships with **30 built-in OAuth 2.0 presets**, grouped by category. Click a preset → the auth URL, token URL, and default scopes are filled in. You still paste your own `client_id` + `client_secret`.
 
-- Google
-- GitHub
-- Slack
-- Microsoft (Entra)
-- Notion
-- Discord
-
-Click a preset → the auth URL, token URL, and default scopes are filled in. You still paste your own `client_id` + `client_secret`.
-
-![OAuth presets — placeholder](#)
+| Category | Providers |
+|---|---|
+| **Productivity** | Google · Microsoft · Microsoft (single tenant) · Notion · Linear · Asana · Airtable · ServiceNow |
+| **Developer** | GitHub · GitLab · GitLab (self-hosted) · Bitbucket · Auth0 · Okta · Snowflake |
+| **Communication** | Slack · Discord · LinkedIn · Mailchimp |
+| **CRM** | HubSpot · Salesforce · Zendesk · Pipedrive · Freshdesk |
+| **Design** | Figma |
+| **Finance** | Stripe · Shopify |
+| **Files** | Dropbox |
+| **Video** | Zoom |
+| **Scheduling** | Calendly |
 
 Each preset links to the provider's "register an OAuth app" page, so first-time setup is one click away.
+
+### Stateless vs per-tenant
+
+Most providers (Google, GitHub, Slack, …) are **stateless** — the auth URLs are the same for every customer. Pick the preset, paste credentials, done.
+
+Some providers (Zendesk, Salesforce, Shopify, GitLab self-hosted, Microsoft single-tenant, ServiceNow, Mailchimp, Pipedrive, Freshdesk, Auth0, Okta, Snowflake) are **per-tenant** — their auth URLs depend on a subdomain, region, or tenant ID. Their presets ship with a small **PROVIDER-SPECIFIC SETUP** block that appears under the picker:
+
+```
+Subdomain
+[ acme                                                ]
+The subdomain of your Zendesk account (the part before
+.zendesk.com).
+```
+
+As you type, the OAuth URLs underneath substitute the placeholders live:
+
+```
+Authorization URL: https://acme.zendesk.com/oauth/authorizations/new
+Token URL:         https://acme.zendesk.com/oauth/tokens
+```
+
+The substituted URLs are what PromptGate stores and uses for the auth flow. The per-tenant values (`subdomain`, `tenant_id`, `instance`, …) are persisted in the connection's `connection_config` JSON so the **Edit** form can re-render the fields and re-substitute when you change them later.
+
+### Adding your own provider
+
+Presets live in **`config/oauth-presets.yaml`**. Each entry looks like:
+
+```yaml
+my-provider:
+    display_name: My Provider
+    category: developer
+    color: 'oklch(0.60 0.18 250)'
+    description: 'One-liner shown as the button tooltip.'
+    auth_mode: oauth2
+    authorization_url: 'https://${subdomain}.my-provider.com/oauth/authorize'
+    token_url: 'https://${subdomain}.my-provider.com/oauth/token'
+    refresh_url: null         # null = identical to token_url
+    default_scopes: 'read'
+    pkce: false
+    docs_url: 'https://my-provider.com/developer/oauth-apps'
+    connection_config:
+        subdomain:
+            type: string
+            label: Subdomain
+            description: 'The subdomain part of your URL.'
+            example: acme
+            pattern: '^[a-z0-9][a-z0-9-]{0,62}$'
+```
+
+- `${field}` placeholders in `authorization_url` and `token_url` resolve against the matching `connection_config[field]` value at form-submit time.
+- `connection_config` can be `{}` for stateless providers.
+- After editing the YAML, restart the app (or clear opcache) — the registry caches in process.
+
+PRs that add new providers to this file are welcome.
 
 ## Generic OAuth
 
@@ -89,6 +144,8 @@ The `oauth_service_connections` table stores:
 | `expires_at` | No |
 | `connected_at` | No |
 | `scopes`, `audience`, `authorization_url`, `token_url` | No |
+| `preset_key` | No (just the preset slug, e.g. `zendesk`) |
+| `connection_config` | No (per-tenant values like `{"subdomain": "acme"}` — not secret) |
 
 Losing your `APP_KEY` makes the encrypted columns unrecoverable — same warning as for credentials.
 
