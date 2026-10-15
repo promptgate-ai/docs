@@ -23,7 +23,7 @@ This is the fastest path from zero to a running gateway.
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/promptgate-ai/promptgate.git
+git clone --recurse-submodules https://github.com/promptgate-ai/promptgate.git
 cd promptgate
 ```
 
@@ -113,8 +113,8 @@ If you'd rather run PHP locally:
 ### Install
 
 ```bash
-git clone https://github.com/promptgate-ai/promptgate.git
-cd promptgate/backend
+git clone --recurse-submodules https://github.com/promptgate-ai/promptgate.git
+cd promptgate
 composer install
 cp .env.example .env
 php artisan key:generate
@@ -199,7 +199,8 @@ Schedule a daily run of the admin **Backup / Export** page (or hit `POST /admin/
 
 ```bash
 cd promptgate
-git pull
+git pull --recurse-submodules
+git submodule update --init
 docker compose down
 docker compose up -d --build
 ```
