@@ -23,8 +23,8 @@ This is the fastest path from zero to a running gateway.
 ### 1. Clone the repository
 
 ```bash
-git clone --recurse-submodules https://github.com/promptgate-ai/promptgate.git
-cd promptgate
+git clone --recurse-submodules https://github.com/promptgate-ai/promptgate-laravel.git
+cd promptgate-laravel
 ```
 
 ### 2. Configure environment
@@ -113,8 +113,8 @@ If you'd rather run PHP locally:
 ### Install
 
 ```bash
-git clone --recurse-submodules https://github.com/promptgate-ai/promptgate.git
-cd promptgate
+git clone --recurse-submodules https://github.com/promptgate-ai/promptgate-laravel.git
+cd promptgate-laravel
 composer install
 cp .env.example .env
 php artisan key:generate
@@ -198,7 +198,7 @@ Schedule a daily run of the admin **Backup / Export** page (or hit `POST /admin/
 ## Updating
 
 ```bash
-cd promptgate
+cd promptgate-laravel
 git pull --recurse-submodules
 git submodule update --init
 docker compose down
@@ -214,7 +214,7 @@ Run a backup first if your gateway is in production: **Admin → Backup / Export
 ## Uninstall
 
 ```bash
-cd promptgate
+cd promptgate-laravel
 docker compose down -v   # -v also removes volumes (deletes data)
 cd ..
 rm -rf promptgate
