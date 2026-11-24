@@ -1,0 +1,189 @@
+[
+  {
+    "label": "Getting started",
+    "items": [
+      {
+        "slug": "install"
+      },
+      {
+        "slug": "configuration"
+      },
+      {
+        "slug": "routing"
+      },
+      {
+        "slug": "formats"
+      },
+      {
+        "slug": "cli"
+      }
+    ]
+  },
+  {
+    "label": "Keys, users and spend",
+    "items": [
+      {
+        "slug": "users"
+      },
+      {
+        "slug": "limits"
+      },
+      {
+        "slug": "budgets"
+      }
+    ]
+  },
+  {
+    "label": "AI Gateway endpoints",
+    "items": [
+      {
+        "slug": "endpoints"
+      },
+      {
+        "slug": "endpoint-routes"
+      },
+      {
+        "slug": "endpoint-sessions"
+      },
+      {
+        "slug": "endpoint-evals"
+      },
+      {
+        "slug": "json-schema"
+      }
+    ]
+  },
+  {
+    "label": "Guardrails",
+    "items": [
+      {
+        "slug": "guardrails"
+      },
+      {
+        "slug": "guard-secrets"
+      },
+      {
+        "slug": "guard-pii"
+      },
+      {
+        "slug": "guard-pii-contextual"
+      },
+      {
+        "slug": "guard-injection"
+      },
+      {
+        "slug": "guard-token-saver"
+      },
+      {
+        "slug": "guard-access"
+      }
+    ]
+  },
+  {
+    "label": "MCP gateway",
+    "items": [
+      {
+        "slug": "mcp"
+      },
+      {
+        "slug": "mcp-agents"
+      },
+      {
+        "slug": "mcp-endpoints"
+      },
+      {
+        "slug": "mcp-control"
+      }
+    ]
+  },
+  {
+    "label": "API Gateway",
+    "items": [
+      {
+        "slug": "api-gateway"
+      },
+      {
+        "slug": "oauth"
+      }
+    ]
+  },
+  {
+    "label": "Web UI",
+    "items": [
+      {
+        "slug": "ui"
+      },
+      {
+        "slug": "ui-pages"
+      },
+      {
+        "slug": "ui-apis"
+      }
+    ]
+  },
+  {
+    "label": "Operations",
+    "items": [
+      {
+        "slug": "metrics"
+      },
+      {
+        "slug": "events"
+      },
+      {
+        "slug": "webhooks"
+      },
+      {
+        "slug": "audit"
+      },
+      {
+        "slug": "anomalies"
+      }
+    ]
+  },
+  {
+    "label": "Testing",
+    "items": [
+      {
+        "slug": "pgfuzz"
+      }
+    ]
+  },
+  {
+    "label": "Changelog",
+    "items": [
+      {
+        "label": "Latest",
+        "slug": "changelog"
+      },
+      {
+        "label": "v0.7",
+        "slug": "changelog/v0-7"
+      },
+      {
+        "label": "v0.6",
+        "slug": "changelog/v0-6"
+      },
+      {
+        "label": "v0.5",
+        "slug": "changelog/v0-5"
+      },
+      {
+        "label": "v0.4",
+        "slug": "changelog/v0-4"
+      },
+      {
+        "label": "v0.3",
+        "slug": "changelog/v0-3"
+      },
+      {
+        "label": "v0.2",
+        "slug": "changelog/v0-2"
+      },
+      {
+        "label": "v0.1",
+        "slug": "changelog/v0-1"
+      }
+    ]
+  }
+]

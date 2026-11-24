@@ -9,26 +9,26 @@
 
 const quickstarts = [
   {
-    href: '/getting-started/installation/',
-    label: 'Docker',
+    href: '/install/',
+    label: 'Install',
     accent: 'oklch(0.96 0.03 235)',
-    icon: 'docker',
+    icon: 'terminal',
   },
   {
-    href: '/features/ai-wrapper/',
+    href: '/routing/',
     label: 'OpenAI SDK',
     accent: 'oklch(0.96 0.06 155)',
     icon: 'plug',
   },
   {
-    href: '/concepts/agent-proxy/',
+    href: '/install/#first-start',
     label: 'Claude Code',
     accent: 'oklch(0.95 0.06 35)',
     icon: 'terminal',
   },
   {
-    href: '/api/overview/',
-    label: 'REST API',
+    href: '/mcp/',
+    label: 'MCP',
     accent: 'oklch(0.96 0.05 295)',
     icon: 'api',
   },
@@ -36,44 +36,44 @@ const quickstarts = [
 
 const destinations = [
   {
-    href: '/getting-started/quick-start/',
+    href: '/install/#first-start',
     title: 'New to PromptGate? Start here',
-    description: 'Install, log in, point your first SDK at the gateway.',
+    description: 'Install one binary, answer six questions, point your agents at it.',
   },
   {
-    href: '/concepts/project-types/',
-    title: 'How projects work',
-    description: 'AI Gateway, AI Wrapper, API Gateway, MCP — pick the right project type.',
+    href: '/guardrails/',
+    title: 'Guardrails',
+    description: 'Secrets, personal data and prompt injection — masked, redacted or refused.',
   },
   {
-    href: '/features/typed-variables/',
-    title: 'Typed input variables',
-    description: 'Per-endpoint variable whitelist with types and constraints.',
+    href: '/routing/',
+    title: 'Routing and keys',
+    description: 'Model aliases, provider prefixes, pg_ keys and fallbacks.',
   },
   {
-    href: '/security/reversible-redaction/',
-    title: 'Reversible redaction',
-    description: 'PII never leaves the gateway — the LLM sees opaque tokens.',
+    href: '/users/',
+    title: 'End users',
+    description: 'Name the user per request; limits and budgets per user.',
   },
   {
-    href: '/features/routing-rules/',
-    title: 'Rule-based routing',
-    description: 'Pick a different model per request based on context.',
+    href: '/endpoints/',
+    title: 'AI Gateway endpoints',
+    description: 'Named prompts in YAML with typed variables, sessions and a cache.',
   },
   {
-    href: '/features/management-api/',
-    title: 'Management API',
-    description: 'Automate setup and operations from CI / IaC.',
+    href: '/mcp/',
+    title: 'MCP gateway',
+    description: 'Every MCP server behind one endpoint, every tool call checked.',
   },
   {
-    href: '/cookbook/claude-code-through-promptgate/',
-    title: 'Claude Code through PromptGate',
-    description: 'Egress-control your coding agents with one base URL.',
+    href: '/api-gateway/',
+    title: 'API Gateway',
+    description: 'Plain HTTP APIs behind pg_ keys, credentials stay in PromptGate.',
   },
   {
-    href: '/security/secret-scanner/',
-    title: 'Secret scanner',
-    description: '18 well-known credential patterns blocked or tokenised at the gateway.',
+    href: '/cli/',
+    title: 'Command line',
+    description: 'Every promptgate command and its flags.',
   },
 ];
 ---
@@ -83,11 +83,10 @@ const destinations = [
     <div class="pg-hero-left">
       <h1>PromptGate Docs</h1>
       <p class="pg-lede">
-        Self-host the gateway that sits between your apps and every AI provider.
-        Explore <a href="/getting-started/introduction/">guides</a>, <a
-        href="/concepts/architecture/">concepts</a>, <a
-        href="/features/ai-endpoints/">features</a>, and the <a
-        href="/api/overview/">REST API</a>.
+        The self-hosted AI gateway as a single binary, between your apps,
+        your coding agents and every AI provider. Start with the <a href="/install/">installation</a>,
+        the <a href="/configuration/">configuration</a> and the <a
+        href="/guardrails/">guardrails</a>.
       </p>
 
       <button class="pg-search" type="button" onclick="document.querySelector('site-search button[data-open-modal]')?.click() ?? document.querySelector('[aria-label*=earch]')?.click()">
@@ -122,7 +121,7 @@ const destinations = [
           </a>
         ))}
       </div>
-      <a class="pg-quickcard-template" href="/getting-started/installation/">Or read the full installation guide <span aria-hidden="true">→</span></a>
+      <a class="pg-quickcard-template" href="/install/">Or read the full installation guide <span aria-hidden="true">→</span></a>
     </aside>
   </div>
 

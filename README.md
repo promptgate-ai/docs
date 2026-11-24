@@ -17,15 +17,26 @@ npm install
 npm run dev          # http://localhost:4321
 ```
 
-Starlight reads `.md` / `.mdx` files from `src/content/docs/`. Each file
-is exposed as a route based on its file name. Sidebar navigation is
-declared in [`astro.config.mjs`](./astro.config.mjs) under the
-`starlight.sidebar` key.
+The pages are not written here. They come from the Markdown in the
+PromptGate repository (`docs/`, `CHANGELOG.md`, `docs/changelog/`) and
+from the pgfuzz README, copied by
+[`scripts/sync-docs.mjs`](scripts/sync-docs.mjs):
+
+```bash
+npm run sync         # reads ../go-source and ../pgfuzz, or pass both paths
+```
+
+The script rewrites links between docs to site routes, takes each
+page's title and description from its first heading and paragraph,
+and writes the sidebar to `src/sidebar.json`. A doc missing from its
+sidebar groups fails the sync. The output is committed, because the
+PromptGate repository is private and CI here can't read it. Only the
+landing page (`src/content/docs/index.mdx`) is edited here.
 
 ## Build & preview
 
 ```bash
-npm run build        # writes dist/ — 75 pages + Pagefind search index
+npm run build        # writes dist/ — about 45 pages + Pagefind search index
 npm run preview      # serve the production build locally
 ```
 
@@ -33,28 +44,30 @@ npm run preview      # serve the production build locally
 
 ```
 src/
-├── content/docs/        Markdown / MDX content per route
+├── content/docs/        generated pages (see above) + index.mdx
+├── sidebar.json         generated sidebar
 ├── assets/              Images embedded in Markdown
 ├── components/Footer.astro   Custom footer (brand-aligned)
 └── styles/custom.css    Brand overrides on top of Starlight defaults
 public/                  Static assets (favicon, og-images)
-astro.config.mjs         Starlight + sidebar configuration
+scripts/sync-docs.mjs    copies the docs from the PromptGate repository
+astro.config.mjs         Starlight configuration
 ```
 
 ## Deployment
 
-Pushes to `main` automatically build and deploy to Cloudflare Pages
-(`docs.promptgate.dev`) via [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml).
+A tag push (`v*`) builds and deploys to Cloudflare Pages
+(`docs.promptgate.dev`) via [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml);
+pushes to `main` only run CI.
 
-The build pins to Node 22 + Astro 6.3.x. Pagefind builds the local
+The build runs on Node 22 with Astro 7. Pagefind builds the local
 search index at the end of `npm run build` — no third-party search
 service, no API key, no telemetry.
 
 ## Contributing
 
-Issues and pull requests are welcome. Doc files live under
-`src/content/docs/` — find the page you want to change there and open
-a PR.
+Issues are welcome. The pages are generated, so a fix lands in the
+PromptGate docs and reaches this site with the next sync.
 
 For substantive changes (new sections, restructured navigation), open
 an issue first so we can talk through the shape.
