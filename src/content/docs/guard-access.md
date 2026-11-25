@@ -36,6 +36,7 @@ merged field by field ([scopes](/guardrails/#scopes)). Action `block`
 |---|---|---|
 | `allow` | IPs and CIDRs | only these may send; empty allows everyone not denied |
 | `deny` | IPs and CIDRs | always refused, even inside `allow` |
+| `lists` | — | more IPs and CIDRs from files or URLs, `into: allow` or `deny` — see [lists](/guard-lists/); mark an `allow` URL `required` |
 
 IPv4 and IPv6 both work; `::ffff:10.1.2.3` counts as `10.1.2.3`. A
 request whose address can't be determined is refused.

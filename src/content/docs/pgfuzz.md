@@ -32,7 +32,7 @@ Uses cases:
 
 ## Status
 
-Phase 1 ships `pii`, `secrets` and `injection` recall tests, a `negatives` false-positive test, a `users` test of end-user limits and key policies, an `endpoints` test of AI Gateway endpoints, a `ui` test of the web UI's security, an `mcp` test of the MCP gateway and an `api` test of the API Gateway. Other categories (`budget`, `ratelimit`, `policy`, `load`) are on the backlog. The PromptGate repository runs a plan of all eight against every build (`scripts/pgfuzz-gate.sh`).
+Phase 1 ships `pii`, `secrets`, `injection` and `keywords` recall tests, a `negatives` false-positive test, a `users` test of end-user limits and key policies, an `endpoints` test of AI Gateway endpoints, a `ui` test of the web UI's security, an `mcp` test of the MCP gateway and an `api` test of the API Gateway. Other categories (`budget`, `ratelimit`, `policy`, `load`) are on the backlog. The PromptGate repository runs a plan of all eight against every build (`scripts/pgfuzz-gate.sh`).
 
 ## Honest caveats
 
@@ -48,6 +48,7 @@ Phase 1 ships `pii`, `secrets` and `injection` recall tests, a `negatives` false
 | `pgfuzz pii` | PII Filter recall — emails / IBANs / CCs / phones / SSNs in clean + adversarial wrappings | ✅ MVP |
 | `pgfuzz secrets` | Secret Scanner recall — AWS / GitHub / Slack / OpenAI / Anthropic / Stripe / JWT (JWTs are well-formed: base64url JSON header and payload) | ✅ |
 | `pgfuzz injection` | Prompt injection patterns — ignore-previous / role-assumption / disregard / override / system-prompt-leak / chat-template smuggling / instruction-bypass, in English and German, with direct / wrapped / obfuscated variants | ✅ |
+| `pgfuzz keywords` | Keyword list recall — words drawn from `--list`, the file the gateway's `keywords` guardrail reads (`lists: [{file: …}]`), written inline, in other case, with punctuation and at the edge of the message; plan stages take `list:` | ✅ |
 | `pgfuzz negatives` | False-positive rate — benign payloads that look like PII, secrets or injection (order numbers, placeholder keys, "ignore the warnings", "write a system prompt"), plus code and prose, in English and German; a 422 or 403 counts as a false positive. `--min-pass-rate 1` fails on any | ✅ |
 | `pgfuzz endpoints` | AI Gateway endpoints with known definitions (`--print-config`): `--expect variables` (wrong types, ranges, lengths, patterns, lookalike characters, unknown names: 400; valid and boundary values: 200), `schema` (answers breaking the output schema never pass: 502), `sessions` (other users, another key `--token2`, forged and broken ids: 404), `cache` (a hit for the same key, never for another). `--min-rate 1` fails on any deviation | ✅ |
 | `pgfuzz ui` | The gateway's web UI, probed like an attacker would: `--expect access` (no page or action without a session, also with forged cookies), `forms` (no change without the session's CSRF token or from another site), `login` (guessing throttled to 429, unknown names indistinguishable, no session fixation, no open redirect, HttpOnly + SameSite=Strict cookie), `headers` (strict CSP, framing and sniffing blocked, no traversal on /static), `reflect` (markup in query parameters never comes back unescaped), `all` | ✅ |

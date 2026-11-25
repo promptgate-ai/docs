@@ -32,6 +32,7 @@ first, so "ig·nore" with a zero-width space in it doesn't slip through.
 | `kinds` | all | detect only these kinds |
 | `languages` | `[en, de]` | built-in phrase sets |
 | `custom` | — | your own: `{kind, phrase}` in the syntax below, or `{kind, pattern}` with a regular expression |
+| `lists` | — | more phrases from files or URLs, one per line, reported as the list's `kind` — see [lists](/guard-lists/) |
 
 Actions `block` (default), `mask`, `log`; roles `user` by default. An
 agent that fetches web pages or reads e-mail meets injection in tool

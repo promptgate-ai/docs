@@ -105,6 +105,32 @@ function verify(secret, headers, rawBody) {
 }
 ```
 
+In Go, with the standard library only:
+
+```go
+func verify(secret string, h http.Header, body []byte) bool {
+	key := []byte(secret)
+	if s, ok := strings.CutPrefix(secret, "whsec_"); ok {
+		key, _ = base64.StdEncoding.DecodeString(s)
+	}
+	id, ts := h.Get("webhook-id"), h.Get("webhook-timestamp")
+	sec, err := strconv.ParseInt(ts, 10, 64)
+	if err != nil || time.Since(time.Unix(sec, 0)).Abs() > 5*time.Minute {
+		return false
+	}
+	mac := hmac.New(sha256.New, key)
+	fmt.Fprintf(mac, "%s.%s.", id, ts)
+	mac.Write(body)
+	want := []byte("v1," + base64.StdEncoding.EncodeToString(mac.Sum(nil)))
+	for _, sig := range strings.Fields(h.Get("webhook-signature")) {
+		if hmac.Equal([]byte(sig), want) {
+			return true
+		}
+	}
+	return false
+}
+```
+
 The signature header may hold several signatures separated by spaces
 (the specification allows that during a secret rotation); accept the
 delivery when one of them matches.
@@ -142,7 +168,31 @@ Events from every process reach the webhooks: a `promptgate keys
 create` on the command line is written to the [audit trail](/audit/),
 and the running gateway picks it up within a second and delivers it.
 
-## Testing
+## Inspecting and testing
+
+```bash
+promptgate webhooks list                       # state, waiting, delivered and given up in 24 h
+promptgate webhooks test ops-alerts            # send a signed webhook.test now, show the answer
+promptgate webhooks deliveries ops-alerts --state failed
+promptgate webhooks deliveries --id 1842       # the event and the receiver's answer
+promptgate webhooks redeliver --failed ops-alerts   # or: redeliver 1842 1843
+```
+
+- `list` shows a webhook as **failing** while its oldest waiting
+  delivery has failed attempts — with when it was queued and the last
+  error — and as **idle** before its first delivery.
+- `test` sends a `webhook.test` event directly, signed and with the
+  webhook's headers, timeout and SSRF check, whatever events the
+  webhook takes. It doesn't enter the queue; exit code 1 unless the
+  receiver answers `2xx`. Use it after changing a URL, secret or header.
+- `redeliver` puts finished deliveries back into the queue with their
+  attempts reset: by id, or every delivery a webhook gave up. They go
+  out before the webhook's newer events; the running gateway picks
+  them up within seconds. Each call is recorded in the
+  [audit trail](/audit/) as `webhook.redelivered`.
+- [Metrics](/metrics/): `promptgate_webhook_deliveries_total{webhook,result}`
+  and `promptgate_webhook_pending{webhook}` — alert on a queue that
+  keeps growing.
 
 A receiver on your own machine needs `private: true`:
 

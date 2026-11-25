@@ -25,7 +25,7 @@ const groups = [
   ['Getting started', ['install', 'configuration', 'routing', 'formats', 'cli']],
   ['Keys, users and spend', ['users', 'limits', 'budgets']],
   ['AI Gateway endpoints', ['endpoints', 'endpoint-routes', 'endpoint-sessions', 'endpoint-evals', 'json-schema']],
-  ['Guardrails', ['guardrails', 'guard-secrets', 'guard-pii', 'guard-pii-contextual', 'guard-injection', 'guard-token-saver', 'guard-access']],
+  ['Guardrails', ['guardrails', 'guard-secrets', 'guard-pii', 'guard-pii-contextual', 'guard-injection', 'guard-token-saver', 'guard-access', 'guard-lists']],
   ['MCP gateway', ['mcp', 'mcp-agents', 'mcp-endpoints', 'mcp-control']],
   ['API Gateway', ['api-gateway', 'oauth']],
   ['Web UI', ['ui', 'ui-pages', 'ui-apis']],

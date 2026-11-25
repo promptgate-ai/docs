@@ -78,6 +78,8 @@ it.
 | `mcp.server_up` | a server that was down answers again | `server` |
 | `oauth.needs_reconnect` | an [OAuth connection](/oauth/) lost its token (the refresh token was refused, or the secret key changed) | `connection`, `reason` |
 | `log.dropped` | the request log dropped entries because the writer couldn't keep up. Fires at most every 30 s. | `dropped`, `dropped_total` |
+| `list.updated` | a guardrail [list](/guard-lists/) fetched from a URL changed; the guardrails use it from the next request | `list` (URL without query), `entries` |
+| `list.failed` | a guardrail list could not be fetched; the last copy stays in use. Once per run of failures. | `list`, `error`, `copy` (whether a copy exists) |
 
 A first connect that succeeds raises no event. Neither does a caller
 that gives up while a server is starting, nor a server that wants

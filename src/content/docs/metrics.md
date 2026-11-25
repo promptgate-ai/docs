@@ -57,6 +57,8 @@ Metrics settings are read at start; a reload logs that a restart is needed.
 | `promptgate_ssrf_blocked_total` | counter | `surface` | outbound connections the [SSRF check](/api-gateway/#ssrf-protection) refused |
 | `promptgate_events_total` | counter | `type` | [operational events](/events/) published, e.g. `budget.exceeded`, `mcp.server_down` |
 | `promptgate_events_dropped_total` | counter | `subscriber` | events a listener lost because its queue was full |
+| `promptgate_webhook_deliveries_total` | counter | `webhook`, `result` | [webhook](/webhooks/) attempts since start: `delivered`, `retried` (failed, tried again later), `given_up`, `dropped` (queue full) |
+| `promptgate_webhook_pending` | gauge | `webhook` | deliveries waiting in the webhook's queue |
 | `promptgate_requests_in_flight` | gauge | — | requests being served right now |
 | `promptgate_spend_usd` | gauge | `scope`, `name`, `period` | spend in the current day / month (`period`), per `scope` `total`, `key`, `provider`, `endpoint` (and `user`, named `key/user`, only with `metrics.user_label`) — the counters [budgets](/budgets/) check against, in `budgets.timezone` |
 | `promptgate_anomaly` | gauge | `endpoint`, `signal` | 1 while the endpoint's latest five-minute window is an [anomaly](/anomalies/) for the signal |
@@ -103,6 +105,12 @@ histogram_quantile(0.95, sum by (le, provider) (rate(promptgate_time_to_first_by
 
 # Spend per key today
 promptgate_spend_usd{scope="key", period="day"}
+```
+
+A webhook whose receiver stopped taking events:
+
+```promql
+promptgate_webhook_pending > 100
 
 # Fallbacks caused by overloaded Anthropic
 increase(promptgate_fallback_attempts_total{provider="anthropic", reason="529"}[1h])

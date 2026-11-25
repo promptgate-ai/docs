@@ -76,6 +76,9 @@
       },
       {
         "slug": "guard-access"
+      },
+      {
+        "slug": "guard-lists"
       }
     ]
   },
@@ -155,6 +158,10 @@
       {
         "label": "Latest",
         "slug": "changelog"
+      },
+      {
+        "label": "v0.8",
+        "slug": "changelog/v0-8"
       },
       {
         "label": "v0.7",

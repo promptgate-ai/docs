@@ -24,6 +24,7 @@ can still answer.
 | `kinds` | all | detect only these kinds, e.g. `[email, iban]` |
 | `validate` | `true` | `false` drops the checksum and range checks — more matches, more false positives |
 | `allow` | — | values never reported, e.g. `support@acme.com`; `@acme.com` allows a whole domain |
+| `lists` | — | more `allow` values from files or URLs — see [lists](/guard-lists/) |
 | `custom` | — | your own formats: `{kind, pattern}`; RE2 syntax, or `/pattern/flags` as in v1 |
 
 Actions `mask` (default), `block`, `log`, `redact`; roles all — customer records

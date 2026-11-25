@@ -143,7 +143,9 @@ rules, `guardrails.mcp.<server>` and the key's; aliases and endpoints
 don't apply to them. Calls through the [API Gateway](/api-gateway/#guardrails)
 layer the global rules, `guardrails.apis.<api>` and the key's.
 
-A list such as `words` is replaced, not extended. A scope can switch a
+A list such as `words` is replaced, not extended; entries a
+[`lists`](/guard-lists/) setting brings count as part of the field
+they extend. A scope can switch a
 guard off (`enabled: false`) or on with its own settings. Guardrails
 apply before routing, so every provider and fallback receives the same
 inspected request. Config changes reload without a restart; a broken
@@ -165,7 +167,8 @@ Words or phrases that must not be sent.
 
 | field | default | |
 |---|---|---|
-| `words` | — | list of words or phrases (required) |
+| `words` | — | list of words or phrases (required, unless `lists` brings them) |
+| `lists` | — | more words from files or URLs — see [lists](/guard-lists/) |
 | `whole_words` | `true` | match only whole words, so `ass` doesn't hit `class` |
 | `case_sensitive` | `false` | |
 
@@ -261,6 +264,7 @@ mode, a per-user rate limit, the endpoints pgfuzz probes and the
 | secrets | 1,400 synthetic keys of seven providers in code | 99% caught |
 | pii | 2,500 e-mails, IBANs, cards, phones, SSNs — inline and in Markdown/code | 99% caught |
 | injection | 2,100 attacks of seven kinds, English and German — plain, in a sentence, with zero-width characters | 99% caught |
+| keywords | 2,000 prompts with entries of a 10,000-entry [list file](/guard-lists/) — inline, other case, with punctuation, on a line of their own | 100% caught |
 | negatives | every benign payload: order numbers, placeholder keys, "ignore the warnings", code, prose | 100% passed |
 | users-isolated | 20 [end users](/users/) at a per-user limit of 3: within it, one over, then users not seen yet | 100% as expected |
 | users-required | a key with `users: required`, with and without an id | 100% as expected |
@@ -282,7 +286,8 @@ PGFUZZ_DIR=../pgfuzz scripts/pgfuzz-gate.sh   # report: pgfuzz-report.json
 
 Requests are walked once, without decoding them into objects; content
 is matched in lowercased copies with literal search instead of
-case-insensitive regular expressions. With `keywords` and `length` on:
+case-insensitive regular expressions; `keywords` finds a list of 20,000
+words in one pass ([lists](/guard-lists/#performance)). With `keywords` and `length` on:
 **4 µs** for a 2 KB chat request, **0.34 ms** for a 200 KB agent
 context (≈ 590 MB/s, Apple M3 Pro). Without guardrails the stage costs
 nothing.
