@@ -26,10 +26,10 @@ const groups = [
   ['Keys, users and spend', ['users', 'limits', 'budgets']],
   ['AI Gateway endpoints', ['endpoints', 'endpoint-routes', 'endpoint-sessions', 'endpoint-evals', 'json-schema']],
   ['Guardrails', ['guardrails', 'guard-secrets', 'guard-pii', 'guard-pii-contextual', 'guard-injection', 'guard-token-saver', 'guard-access', 'guard-lists', 'quality-gate']],
-  ['MCP gateway', ['mcp', 'mcp-agents', 'mcp-endpoints', 'mcp-control']],
+  ['MCP gateway', ['mcp', 'mcp-servers', 'mcp-agents', 'mcp-endpoints', 'mcp-control']],
   ['API Gateway', ['api-gateway', 'oauth']],
   ['Web UI', ['ui', 'ui-pages', 'ui-apis']],
-  ['Operations', ['metrics', 'events', 'webhooks', 'audit', 'anomalies']],
+  ['Operations', ['operations', 'metrics', 'events', 'webhooks', 'audit', 'anomalies']],
   ['Testing', ['pgfuzz']],
 ];
 const skip = new Set(['releasing']); // for maintainers, stays in the repository

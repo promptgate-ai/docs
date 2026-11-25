@@ -16,6 +16,64 @@ client ──▶ PromptGate /api/github/repos/acme/app ──▶ https://api.git
            (pg_ key)                                  (Authorization from PromptGate)
 ```
 
+## What the API Gateway can do
+
+| feature | does | |
+|---|---|---|
+| one route per API | `/api/<name>/…` goes to the API's base URL; methods, query string and body caps per API | [below](#calling-an-api) |
+| credentials stay in PromptGate | the caller sends its `pg_` key; PromptGate sets the API's own token — never the other way round | [configuration](#configuration) |
+| header policy | an allowlist or blocklist of caller headers, headers set per API with `{{ key }}`, `{{ user }}`, `{{ request_id }}` | [configuration](#configuration) |
+| OAuth | tokens for 30 services fetched, stored encrypted and renewed by PromptGate | [OAuth](/oauth/) |
+| keys | a `pg_` key may call only the APIs it names | [configuration](#configuration) |
+| guardrails | the same guards as for models, on request bodies and on answers; values redacted on the way out come back on the way in | [below](#guardrails) |
+| limits | per API, shared by every key — protects the API's quota | [below](#logs-stats-limits-and-metrics) |
+| SSRF protection | no calls into private networks or cloud metadata, checked on every connection after DNS | [below](#ssrf-protection) |
+| retries, streaming | idempotent calls repeated after 502–504; event streams flushed as they arrive | [below](#calling-an-api) |
+| logs, stats, metrics | one log row per call with key, [end user](/users/), status and timing; `stats --by api`; Prometheus | [below](#logs-stats-limits-and-metrics) |
+
+Everything in one config:
+
+```yaml
+surfaces:
+  api_gateway: { mount: /api }           # default
+apis:
+  github:
+    url: https://api.github.com          # base; the path below /api/github is joined to it
+    methods: [GET, POST, PATCH]          # default: GET HEAD POST PUT PATCH DELETE OPTIONS
+    headers:
+      forward: [accept, content-type, x-github-api-version]   # allowlist; default: all but blocked
+      block: [x-debug]
+      set:
+        Authorization: "Bearer ${GITHUB_TOKEN}"
+        X-Caller: "{{ key }}"
+    timeout: 30s                         # whole call; default 30s
+    max_request_bytes: 10485760          # default 10 MiB
+    max_response_bytes: 104857600        # default 100 MiB
+    query: keep                          # keep | drop the caller's query string
+    retries: 0                           # 0–5; idempotent methods only
+  zendesk: { oauth: zendesk }            # token from an OAuth connection, url from its preset
+  inventory:
+    url: http://10.0.4.12:8080/v1
+    private: true                        # an internal service: skip the SSRF check
+oauth:
+  connections:
+    zendesk:
+      preset: zendesk
+      client_id: ${ZENDESK_CLIENT_ID}
+      client_secret: ${ZENDESK_CLIENT_SECRET}
+      config: { subdomain: acme }
+guardrails:
+  apis:
+    github: { prompt_injection: { roles: [user, tool] }, pii: { action: redact } }
+limits:
+  apis: { github: 300/m, "*": 60/m }     # 429 with Retry-After
+security:
+  ssrf: { allow: [10.0.5.0/24] }         # exceptions to the SSRF check
+```
+
+Keys name the APIs they may call: `promptgate keys create ci --api github`
+(empty: every API).
+
 ## Calling an API
 
 ```sh
@@ -125,12 +183,7 @@ promptgate stats --by api            # or --by method, --surface api --by key
 
 API rows stay out of model stats, cost, budgets and anomalies; their
 per-minute totals have their own table. Rate limits protect the API and
-its quota, shared by every key:
-
-```yaml
-limits:
-  apis: { github: 300/m, "*": 60/m }   # 429 with Retry-After
-```
+its quota, shared by every key: `limits.apis`, 429 with `Retry-After`.
 
 Prometheus: `promptgate_api_requests_total{api,method,key,status}`,
 `promptgate_api_request_duration_seconds{api}` and
@@ -149,31 +202,7 @@ see the benchmark.
 
 ## Configuration
 
-```yaml
-surfaces:
-  api_gateway: { mount: /api }           # default
-apis:
-  github:
-    url: https://api.github.com          # base; the path below /api/github is joined to it
-    methods: [GET, POST, PATCH]          # default: GET HEAD POST PUT PATCH DELETE OPTIONS
-    headers:
-      forward: [accept, content-type, x-github-api-version]   # allowlist; default: all but blocked
-      block: [x-debug]
-      set:
-        Authorization: "Bearer ${GITHUB_TOKEN}"
-        X-Caller: "{{ key }}"
-    timeout: 30s                         # whole call; default 30s
-    max_request_bytes: 10485760          # default 10 MiB
-    max_response_bytes: 104857600        # default 100 MiB
-    query: keep                          # keep | drop the caller's query string
-    retries: 0                           # 0–5; idempotent methods only
-  inventory:
-    url: http://10.0.4.12:8080/v1
-    private: true                        # an internal service: skip the SSRF check
-keys:
-  - name: ci
-    apis: [github]                       # empty: every API
-```
+The fields of an API, as in the [example above](#what-the-api-gateway-can-do):
 
 | Field | Default | Meaning |
 |---|---|---|

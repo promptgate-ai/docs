@@ -14,10 +14,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Docs: the guardrails page opens with everything guardrails can do —
-  every guard, actions, lists, scopes, roles and surfaces — and one
-  config that uses them all; the pgfuzz quality gate moved to its own
-  page.
+- Docs: the guardrails, AI Gateway endpoints, end users, MCP gateway
+  and API Gateway pages open with everything the feature can do and one
+  config that uses all of it (each checked with `promptgate validate`).
+  New pages: operations (log, metrics, events, webhooks, audit,
+  anomalies at a glance), MCP servers (server settings, protocol
+  versions, local programs) and the pgfuzz quality gate.
 
 ## [0.9.0] - 2026-11-25
 

@@ -14,6 +14,44 @@ request names the end user it is for. The console, the request log and
 10:42:13 200 openai gpt-4o-mini  sse ttfb 270µs total 1.20s 4.1KB  120→30 tok  $0.000420  key=shop  user=customer-4711
 ```
 
+## What end users give you
+
+| feature | does | |
+|---|---|---|
+| the user id | from an `X-PromptGate-User` header or the fields OpenAI and Anthropic SDKs already send — no code change | [below](#sending-the-user-id) |
+| per-key policy | a key may require an id, use it when present, or ignore it | [below](#per-key-policy) |
+| limits per user | every user their own rate allowance; one user at the limit slows no one else | [below](#limits-per-user) |
+| budgets per user | daily and monthly USD or token caps per user (402) | [below](#budgets-per-user) |
+| hashed ids | the log stores a keyed hash instead of the id | [below](#valid-ids) |
+| forwarding | the provider's own end-user field set, so OpenAI and Anthropic act on one user, not your whole key | [below](#passing-the-user-on-to-the-provider) |
+| reports | requests, tokens and cost per user; logs filtered by user; an optional metrics label | [below](#seeing-who-used-what) |
+| AI Gateway routes | another model per user | [routes](/endpoint-routes/) |
+
+Everything in one config:
+
+```yaml
+users:
+  sources: [header, openai, anthropic]   # order; [] turns attribution off
+  header: X-PromptGate-User              # e.g. X-End-User; never forwarded
+  max_length: 128
+  log: hashed                            # plain (default) | hashed
+  hash_key: ${PROMPTGATE_USER_HASH_KEY}  # ≥ 16 characters, needed for hashed
+  forward: hashed                        # off (default) | hashed | plain
+  passthrough: optional                  # policy for requests with a provider key
+limits:
+  users:
+    "*": 30/m                            # each user of each key
+    vip-4711: { requests: 300/m, burst: 50 }
+budgets:
+  users:
+    "*": { daily_usd: 2, monthly_usd: 20 }
+metrics: { user_label: true }            # a user label on the counters
+```
+
+`hash_key` keeps hashes stable across restarts. If you change it, the same
+user gets a new hash. A key's own policy is set with
+`promptgate keys create <name> --users required`.
+
 ## Sending the user id
 
 The id travels with each request. PromptGate reads it from the first of
@@ -198,21 +236,7 @@ For Prometheus, `metrics.user_label: true` adds a `user` label to the
 request, token and cost counters. That label is off by default because
 every user becomes a new series ([metrics](/metrics/#cardinality)).
 
-## Configuration
-
-```yaml
-users:
-  sources: [header, openai, anthropic]   # order; [] turns attribution off
-  header: X-PromptGate-User              # e.g. X-End-User; never forwarded
-  max_length: 128
-  log: plain                             # plain | hashed
-  hash_key: ${PROMPTGATE_USER_HASH_KEY}  # ≥ 16 characters, needed for hashed
-  forward: off                           # off | hashed | plain
-  passthrough: optional                  # optional | required | ignore
-```
-
-`hash_key` keeps hashes stable across restarts. If you change it, the same
-user gets a new hash.
+## Quality
 
 Every build checks this behaviour with pgfuzz: per-user limits isolate
 users, `required` keys reject requests without an id, and `ignore` keys

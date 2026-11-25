@@ -92,6 +92,9 @@
         "slug": "mcp"
       },
       {
+        "slug": "mcp-servers"
+      },
+      {
         "slug": "mcp-agents"
       },
       {
@@ -130,6 +133,9 @@
   {
     "label": "Operations",
     "items": [
+      {
+        "slug": "operations"
+      },
       {
         "slug": "metrics"
       },

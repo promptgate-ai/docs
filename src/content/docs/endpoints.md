@@ -11,10 +11,60 @@ that change, as typed variables. Apps call `summarize-ticket` instead of
 hard-coding prompts and model ids, and you change the prompt or the model
 without touching an app.
 
-Every endpoint request runs through the same pipeline as any other
-request: keys, [end users](/users/), [guardrails](/guardrails/),
-[rate limits](/limits/), [budgets](/budgets/), fallback and the request
-log.
+## What endpoints can do
+
+| feature | does | |
+|---|---|---|
+| prompts in the config | system prompt, template, model and parameters live in YAML; clients may override only the parameters you allow | [below](#defining-endpoints) |
+| typed variables | `string`, `text`, `int`, `float`, `bool`, `date`, `enum` with bounds, lengths and patterns — all problems of a request reported at once (400) | [below](#variables) |
+| schemas | a JSON Schema for the input; answers checked against an output schema, asked again, a 502 instead of a broken answer | [below](#schemas) |
+| routes | another model by prompt size, spend, time, key, user or variable values | [routes](/endpoint-routes/) |
+| sessions | the conversation kept between requests; clients send only the new message | [sessions](/endpoint-sessions/) |
+| cache | identical requests answered from memory — no provider call, no cost — per key, user or everyone | [below](#cache) |
+| versions | every change is a version, logged with each request; `history` and `diff` | [below](#versions) |
+| evals and replay | test cases run against the current config; logged requests sent again | [evals](/endpoint-evals/) |
+| anomaly alerts | error rate, latency and spend far above the endpoint's usual | [anomalies](/anomalies/) |
+| MCP tools | every endpoint is also a tool for agents on the MCP gateway | [MCP endpoints](/mcp-endpoints/) |
+
+Every endpoint request runs through the same pipeline as any other:
+keys ([limited to some endpoints](#keys)), [end users](/users/),
+[guardrails](/guardrails/), [rate limits](/limits/) and
+[budgets](/budgets/) — each also per endpoint — fallback and the log.
+Clients call `/gw/<name>`, or an OpenAI or Anthropic SDK uses the model `endpoint:<name>`.
+
+Everything in one config:
+
+```yaml
+endpoints:
+  summarize-ticket:
+    model: openai:gpt-4.1-mini
+    params: { temperature: 0.2, max_tokens: 400 }
+    client_params: [max_tokens]
+    system: You summarise support tickets for {{ product }}.
+    template: "Ticket ({{ priority }}): {{ body }}"
+    variables:
+      product:  { default: PromptGate }
+      priority: { type: enum, values: [low, normal, high] }
+      body:     { type: text, max_length: 20000 }
+    output_schema:
+      type: object
+      properties: { summary: { type: string }, priority: { enum: [low, normal, high] } }
+      required: [summary, priority]
+    output_retries: 1
+    routes:
+      - { name: long-input, when: { input_tokens: { gt: 8000 } }, use: { model: "openai:gpt-4.1" } }
+    cache: { ttl: 10m, scope: key }
+  tutor:
+    model: openai:gpt-4.1-mini
+    system: You teach {{ topic }}.
+    template: "{{ question }}"
+    variables: { topic: {}, question: { type: text } }
+    sessions: { ttl: 1h, max_messages: 40 }
+
+limits:     { endpoints: { summarize-ticket: 120/m } }
+budgets:    { endpoints: { "*": { monthly_usd: 50 } } }   # each endpoint on its own counter
+guardrails: { endpoints: { summarize-ticket: { pii: { action: redact } } } }
+```
 
 ## Defining endpoints
 
@@ -107,16 +157,8 @@ client.chat.completions.create(
 
 ## Limits, budgets and guardrails per endpoint
 
-```yaml
-limits:
-  endpoints: { summarize-ticket: 120/m }
-budgets:
-  endpoints: { "*": { monthly_usd: 50 } }      # every endpoint on its own counter
-guardrails:
-  endpoints:
-    summarize-ticket: { pii: { action: redact } }
-```
-
+`limits.endpoints`, `budgets.endpoints` and `guardrails.endpoints` take
+an endpoint name, as in the [example above](#what-endpoints-can-do).
 Endpoint guardrails override the alias's and are overridden by the
 key's. `promptgate logs --endpoint <name>`, `promptgate stats --by
 endpoint` and `promptgate budgets` show endpoints; the console line ends
@@ -201,16 +243,6 @@ Schema files are read when the config loads; after editing one, reload
 (save the config or send SIGHUP).
 
 The supported keywords are listed in [JSON Schema](/json-schema/).
-
-## Routes, sessions and cache
-
-- [Routes](/endpoint-routes/) send a request to another model by prompt
-  size, spend, time, key, user or variable values.
-- [Sessions](/endpoint-sessions/) keep the conversation between
-  requests.
-- The [cache](#cache) answers repeated requests without a provider call.
-- [Anomaly alerts](/anomalies/) flag error rates, latency and spend far
-  above the endpoint's usual.
 
 ## Cache
 

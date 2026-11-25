@@ -21,6 +21,58 @@ agent ──▶ PromptGate /mcp ──┬──▶ github   (remote, Streamable 
 Tools are renamed `<server>__<tool>` — `github__create_issue`,
 `files__read_file` — so names from different servers never clash.
 
+## What the MCP gateway can do
+
+| feature | does | |
+|---|---|---|
+| one endpoint for every server | remote servers (Streamable HTTP) and local programs (stdio) behind `/mcp`; lists fetched in parallel and cached | [servers](/mcp-servers/) |
+| moving agents | `mcp import` takes over the servers of Claude Code, Cursor, VS Code and Claude Desktop; `mcp setup` points the agent at the gateway | [moving agents](/mcp-agents/) |
+| tool allowlists | per server `tools.allow` / `deny`; per key, servers or single tools | [below](#keys-limits-and-guardrails) |
+| limits | per server or per tool, shared by every key — protects the server | [below](#keys-limits-and-guardrails) |
+| guardrails in both directions | tool arguments, results, prompts, resources — and tool definitions ("tool poisoning") | [below](#guardrails) |
+| OAuth | tokens for remote servers, renewed by PromptGate, also discovered from the server (`oauth: auto`) | [OAuth](/oauth/) |
+| endpoint tools | every [AI Gateway endpoint](/endpoints/) is a tool, `endpoint__<slug>`, called through the model pipeline | [endpoint tools](/mcp-endpoints/) |
+| PromptGate's own tools | stats, logs, config, keys, endpoints, limits, budgets — for keys with `control: read` or `write` | [control tools](/mcp-control/) |
+| every protocol version | 2026-07-28 (stateless) and the earlier session versions, on both sides, mixed freely | [protocol versions](/mcp-servers/#protocol-versions) |
+| local programs | started on demand with a clean environment; the whole process tree stopped; restarted after crashes | [local programs](/mcp-servers/#local-programs) |
+| logs, stats, metrics | every call a log row; per-tool p50 and p95; Prometheus | [below](#logs-stats-and-metrics) |
+
+Everything in one config:
+
+```yaml
+mcp:
+  servers:
+    github:                              # remote server
+      url: https://api.githubcopilot.com/mcp/
+      headers: { Authorization: "Bearer ${GITHUB_TOKEN}" }
+      timeout: 30s
+    linear:
+      url: https://mcp.linear.app/mcp
+      oauth: auto                        # token discovered from the server
+      tools: { allow: [list_issues, get_issue] }   # only these
+    files:                               # local program
+      command: npx
+      args: [-y, "@modelcontextprotocol/server-filesystem", /srv/docs]
+      env: { NODE_OPTIONS: --max-old-space-size=256 }
+      idle_stop: 10m
+keys:
+  - name: claude-code                     # or: promptgate keys create … --mcp …
+    hash: sha256:…
+    mcp: [github, files, linear/get_issue]   # servers or single tools; empty = all
+    control: read                            # PromptGate's own tools, read-only
+limits:
+  mcp:
+    files: 120/m                             # per server …
+    github/create_issue: 10/h                # … or per tool
+    "*": 600/m                               # every server without its own entry
+guardrails:
+  secrets: { action: block }                 # global rules cover tool calls too
+  mcp:
+    files:                                   # reads untrusted documents
+      prompt_injection: { roles: [user, tool] }
+      pii: { action: redact }
+```
+
 ## Connecting agents
 
 Agents connect to `http://127.0.0.1:7878/mcp` (`surfaces.mcp_gateway.mount`)
@@ -76,86 +128,12 @@ What agents get:
 - Browsers: a request with an `Origin` header must come from the
   gateway's own host or a page on this machine (DNS rebinding).
 
-## Servers
-
-```yaml
-mcp:
-  servers:
-    github:                              # remote server
-      url: https://api.githubcopilot.com/mcp/
-      headers: { Authorization: "Bearer ${GITHUB_TOKEN}" }
-      timeout: 30s
-    files:                               # local program
-      command: npx
-      args: [-y, "@modelcontextprotocol/server-filesystem", /srv/docs]
-      env: { NODE_OPTIONS: --max-old-space-size=256 }
-      idle_stop: 10m
-    linear:
-      url: https://mcp.linear.app/mcp
-      tools:
-        allow: [list_issues, get_issue]  # only these
-```
-
-| key | default | description |
-|---|---|---|
-| `url` | — | a remote server's MCP endpoint (Streamable HTTP) |
-| `headers` | — | sent with every request, e.g. `Authorization`; use `${ENV}` references, values are never logged |
-| `oauth` | — | an [OAuth connection](/oauth/#using-a-connection) whose token goes as `Authorization`, renewed by PromptGate (not with an `Authorization` header), or `auto`: [discovered](/oauth/#mcp-servers-oauth-auto) from the server; `security.ssrf.mcp: true` puts remote servers behind the [SSRF check](/api-gateway/#ssrf-protection) |
-| `command`, `args` | — | a local program PromptGate starts and talks to over stdin/stdout |
-| `env` | — | the program's environment — see [Local programs](#local-programs) |
-| `dir` | PromptGate's | working directory of the program |
-| `start` | `lazy` | `lazy` starts the program on its first call, `eager` with the gateway |
-| `idle_stop` | `0` (never) | stop a program unused this long; the next call starts it again |
-| `timeout` | `60s` | one call, start of a program included |
-| `tools.allow` | all | the tools served, by the server's own names; patterns like `list_*` |
-| `tools.deny` | — | tools never served; wins over `allow` |
-| `disabled` | `false` | keep the entry, serve nothing from it |
-
-A server has either `url` or `command`. Names are lowercase letters,
-digits and `-`.
-
-Settings for all servers:
-
-| key | default | description |
-|---|---|---|
-| `mcp.separator` | `__` | joins server and tool names |
-| `mcp.list_ttl` | `5m` | how long tool, prompt and resource lists are cached; a server's own shorter time wins |
-| `mcp.max_result_bytes` | `4194304` (4 MiB) | largest message accepted from a server or an agent |
-| `surfaces.mcp_gateway.mount` | `/mcp` | where agents connect |
-
-A config reload restarts only the servers whose settings changed; an
-unchanged local program keeps running.
-
-## Endpoint tools
-
-Every [AI Gateway endpoint](/endpoints/) is also a tool,
-`endpoint__<slug>`, called through the model pipeline as the agent —
-see [endpoint tools](/mcp-endpoints/).
-
-## PromptGate's own tools
-
-Keys with `control: read` or `write` also see PromptGate's own tools —
-stats, logs, config, keys, endpoints, limits, budgets. See
-[control tools](/mcp-control/).
-
 ## Keys, limits and guardrails
 
-```yaml
-keys:
-  - name: claude-code
-    mcp: [github, files, linear/get_issue]   # servers or single tools; empty = all
-limits:
-  mcp:
-    files: 120/m                             # per server …
-    github/create_issue: 10/h                # … or per tool
-    "*": 600/m                               # every server without its own entry
-guardrails:
-  secrets: { action: block }                 # global rules cover tool calls too
-  mcp:
-    files: { pii: { action: redact } }       # per server, the key's rules still win
-```
-
-See [Guardrails](#guardrails) for what the rules do with tool calls.
+Keys name the servers or single tools they may use (`keys[].mcp`, or
+`promptgate keys create … --mcp github --mcp linear/get_issue`); limits
+and guardrails take a server or `server/tool` — see the
+[example above](#what-the-mcp-gateway-can-do).
 
 Limits on MCP servers protect the server: they count calls from every
 key together, like provider limits. A call over one gets JSON-RPC error
@@ -179,16 +157,8 @@ So a guard covers MCP exactly where it covers those roles in model
 requests. `secrets` and `pii` read every role and so both directions out
 of the box. `prompt_injection` and `keywords` read `user` content by
 default; instructions planted in tool results — the main risk of MCP —
-are caught once you add `tool`:
-
-```yaml
-guardrails:
-  secrets: { action: block }
-  mcp:
-    files:                                   # reads untrusted documents
-      prompt_injection: { roles: [user, tool] }
-      pii: { action: redact }
-```
+are caught once you add `tool` (`roles: [user, tool]`, as for `files`
+in the [example above](#what-the-mcp-gateway-can-do)).
 
 | action | arguments | results |
 |---|---|---|
@@ -230,53 +200,6 @@ MCP requests have their own minute totals, so `stats`, budgets, cost and
 console shows them with `mcp` instead of `sse`. Metrics:
 `promptgate_mcp_requests_total`, `promptgate_mcp_request_duration_seconds`
 and `promptgate_mcp_server_up` — see [metrics](/metrics/).
-
-## Protocol versions
-
-MCP changed shape with version 2026-07-28: requests carry their protocol
-version and capabilities themselves, sessions and the `initialize`
-handshake are gone. Most agents and servers still speak the earlier
-versions. PromptGate speaks both, on both sides:
-
-- **Agents:** a request with per-request metadata is served statelessly;
-  an `initialize` opens a session (`Mcp-Session-Id`) in the version the
-  agent asked for. Versions 2026-07-28, 2025-11-25, 2025-06-18 and
-  2025-03-26.
-- **Servers:** PromptGate asks each server once with `server/discover`.
-  A modern server answers it; a legacy one gets `initialize` and a
-  session. The answer is remembered — for a local program across its
-  restarts. A forgotten session (the server restarted) is opened again.
-
-Agent and server need not match: a legacy agent can use a modern server
-and the other way round. PromptGate introduces itself to servers with
-its own identity and capabilities; an agent's never reach them.
-
-Not forwarded: sampling, roots and elicitation (a server asking the agent
-for input mid-call — answered with "not supported"), and the deprecated
-HTTP+SSE transport of 2024-11-05.
-
-## Local programs
-
-PromptGate starts a local server on its first call (or with the gateway,
-`start: eager`) and stops it on shutdown, on reload when its settings
-changed, and after `idle_stop`.
-
-- **Environment:** a program inherits only `PATH`, `HOME`, `USER`,
-  `LANG`, `TMPDIR`, `TZ` and the basic Windows variables
-  (`SystemRoot`, `APPDATA`, `TEMP`, …). Provider keys and other secrets in
-  PromptGate's environment stay out; give a program what it needs under
-  `env`, ideally as `${ENV}` references.
-- **Process tree:** each program runs in its own process group (Linux,
-  macOS) or job object (Windows), so stopping it also ends what it
-  started — `npx` and the `node` behind it. Stopping closes stdin first,
-  then sends SIGTERM, then SIGKILL, two seconds apart. On Linux and
-  Windows the programs end with PromptGate even if it crashes.
-- **Crashes:** a program that exits is started again on the next call,
-  after a pause that doubles from one second to a minute while it keeps
-  crashing, and resets after it ran for 30 seconds.
-- **Output:** what a program writes to stderr goes to PromptGate's log
-  (shortened, at most 50 lines per 10 seconds); stray lines on stdout
-  that aren't MCP messages are logged and skipped.
 
 ## Command line
 
