@@ -16,8 +16,17 @@ curl -fsSL https://install.promptgate.dev/install.sh | sh
 
 Downloads the binary for your platform, verifies its SHA-256 against
 `checksums.txt` and installs it to `/usr/local/bin` (if writable) or
-`~/.local/bin`. Options: `PROMPTGATE_VERSION=v0.1.0`,
-`PROMPTGATE_INSTALL_DIR=/opt/bin`.
+`~/.local/bin`. When that directory isn't on your PATH yet, the script
+adds it to your shell's profile — `~/.zshrc`, `~/.bashrc`
+(`~/.bash_profile` on macOS), fish's `conf.d`, or `~/.profile` — once,
+and tells you how to use it in the open terminal.
+
+| variable | |
+|---|---|
+| `PROMPTGATE_VERSION` | a tag such as `v0.8.1`; default: the latest, read from `version.json` |
+| `PROMPTGATE_INSTALL_DIR` | another directory, e.g. `/opt/bin` |
+| `PROMPTGATE_NO_MODIFY_PATH` | leave shell profiles alone |
+| `NO_COLOR` | plain output |
 
 ## Windows (PowerShell)
 
@@ -25,7 +34,9 @@ Downloads the binary for your platform, verifies its SHA-256 against
 irm https://install.promptgate.dev/install.ps1 | iex
 ```
 
-Installs to `%LOCALAPPDATA%\Programs\promptgate` and adds it to your user PATH.
+Installs to `%LOCALAPPDATA%\Programs\promptgate` and adds it to your user
+PATH, and to the PATH of the open PowerShell, so `promptgate` works at once.
+`PROMPTGATE_VERSION` and `PROMPTGATE_INSTALL_DIR` work as above.
 
 ## Homebrew
 
@@ -65,30 +76,38 @@ all URLs.
 promptgate start
 ```
 
-Without a config, `start` in a terminal offers to set PromptGate up. It
-asks six questions, and Enter takes the suggestion each time:
+Without a config, `start` in a terminal asks two things and runs. Enter
+takes the suggestion; the arrow keys move, Space ticks:
 
-1. **Provider**: where requests go by default. Providers whose key is in
-   the environment are marked.
-2. **API key**: from the environment, or pasted (stored in the config,
-   readable only by you).
-3. **Protection**: ready-made [guardrails](/guardrails/#ready-made-protection),
-   `recommended` by default.
-4. **Access key**: a first `pg_` key for your apps, with a daily budget
-   ($20 suggested). Requests with your own provider key or a Claude or
-   ChatGPT subscription don't count against it.
-5. **Coding agents**: Claude Code and Codex, when found, are sent through
-   PromptGate by setting the base URL in their own config (see
-   [`promptgate connect`](/cli/)). The file is copied to
-   `<file>.before-promptgate` first.
-6. **Background service**: start PromptGate at login and keep it running.
-   Suggested when an agent was connected, because the agent can't reach
-   its model while PromptGate is stopped.
+1. **Guardrails**: a ready-made level ([protection](/guardrails/#ready-made-protection)),
+   `recommended` by default — or **choose …** to tick `secrets`, `pii`,
+   `prompt_injection`, `token_saver` and `attachments` one by one.
+2. **Web UI**: off unless you turn it on. Later: `promptgate start --ui
+   127.0.0.1:7879` or `ui.enabled: true`.
 
-Then PromptGate runs: in the background, or in the terminal. `promptgate
-setup` asks the same questions again later; `setup --yes` asks nothing
-(flags `--protection`, `--budget`, `--connect claude-code,codex`,
-`--service`).
+Passing requests through needs nothing else: apps send their own
+provider key, and the model name picks the provider (`openai:gpt-5`,
+`anthropic:claude-…`, `groq:…`; without a prefix the default provider).
+Then the screen clears and PromptGate shows where to point your apps:
+
+```
+PromptGate runs on http://127.0.0.1:7878
+
+Point your apps here:
+  OpenAI SDKs, Codex           OPENAI_BASE_URL=http://127.0.0.1:7878/v1
+  Anthropic SDKs, Claude Code  ANTHROPIC_BASE_URL=http://127.0.0.1:7878
+
+  guardrails        pii: redact · prompt_injection · secrets: mask · token_saver
+  keys              none — apps send their own provider key (auth auto)
+  web UI            off — promptgate start --ui 127.0.0.1:7879, or ui.enabled in the config
+```
+
+`pg_` keys for your apps with a daily budget, sending Claude Code and
+Codex through PromptGate, and the background service come with
+`promptgate setup` — six questions — or one at a time: `promptgate keys
+create`, `promptgate connect claude-code`, `promptgate install`. `setup
+--yes` asks nothing (flags `--protection`, `--budget`, `--connect
+claude-code,codex`, `--service`).
 
 Started without a config and without a terminal (a container, a
 service), PromptGate runs on built-in defaults with the recommended
@@ -101,6 +120,23 @@ promptgate install    # LaunchAgent / systemd --user / Windows service
 promptgate service status
 promptgate uninstall  # offers to send connected agents directly again
 ```
+
+Opened in a browser, the gateway's own address (`http://127.0.0.1:7878`)
+shows that PromptGate runs, links to the web UI and lists the base URLs
+for SDKs and agents; API clients get JSON there as before.
+
+## Pause and resume
+
+```bash
+promptgate pause      # agents go directly to their providers, the service stops
+promptgate resume     # the service starts, the agents go through PromptGate again
+```
+
+`pause` sends every connected coding agent directly to its provider
+first, so none is left pointing at a stopped gateway, then stops the
+service. `resume` starts it, waits until the gateway answers, and only
+then routes the agents `pause` disconnected through it again. Config,
+keys and the request log stay untouched.
 
 ## Updates and verification
 

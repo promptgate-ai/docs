@@ -7,8 +7,9 @@ description: "PromptGate ships a web UI inside the binary: server-rendered pages
 
 PromptGate ships a web UI inside the binary: server-rendered pages, a
 little plain JavaScript, its fonts and icons — no Node, no CDN, no
-request to another host. It is on by default and listens on **its own
-port, on localhost only**.
+request to another host. It listens on **its own port, on localhost
+only**. The first `promptgate start` asks whether to turn it on (off
+unless you say yes); `setup` and a gateway without a config turn it on.
 
 It covers what the YAML and the CLI do — dashboard, request log, cost,
 AI Gateway endpoints with versions and evals, a playground, keys,

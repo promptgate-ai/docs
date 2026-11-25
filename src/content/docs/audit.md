@@ -13,7 +13,7 @@ them write to the same trail:
 | actor | what |
 |---|---|
 | `ui:<user>` | the [web UI](/ui/): sign-ins, failed sign-ins, sign-outs, passwords, users, and every save (config file, endpoints, keys, APIs, MCP servers, OAuth connections, policies, prices, eval runs) |
-| `cli` | the command line: `keys create/revoke/enable/delete`, `ui users add/remove`, `ui passwd`, `oauth connect/refresh/disconnect/prune`, `mcp import --write`, and the key `mcp setup` creates |
+| `cli` | the command line: `config set/unset`, `keys create/revoke/enable/delete`, `ui users add/remove`, `ui passwd`, `oauth connect/refresh/disconnect/prune`, `mcp import --write`, and the key `mcp setup` creates |
 | `mcp:<key>` | an agent using PromptGate's [own MCP tools](/mcp-control/) |
 | `gateway` | the gateway itself: the first admin at the first start, and retention |
 

@@ -16,7 +16,7 @@ and the answer on the way out — buffered, streamed and errors alike.
 
 | provider `type` | presets | translated from |
 |---|---|---|
-| `openai`, `openai-compatible` | `openai`, `gemini`, `groq`, `mistral`, `together`, `deepseek`, `openrouter`, `xai`, `ollama` | Anthropic clients |
+| `openai`, `openai-compatible` | `openai`, `gemini`, `groq`, `mistral`, `together`, `deepseek`, `openrouter`, `xai`, `kimi`, `ollama` | Anthropic clients |
 | `anthropic` | `anthropic` | — (OpenAI clients use Anthropic's OpenAI-compatible API, byte for byte) |
 | `gemini` | `gemini-native` | OpenAI and Anthropic clients |
 | `cohere` | `cohere` | OpenAI and Anthropic clients |

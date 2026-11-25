@@ -21,7 +21,8 @@ Every setting resolves in this order — the first one that is set wins:
 4. the built-in default
 
 `promptgate info` prints the effective values; `promptgate validate` checks
-the file. Unknown keys are errors, so typos never fall back silently.
+the file; `promptgate config get|set|unset <path>` reads and changes one
+setting (`config set limits.providers.openai 50/s`) without opening it. Unknown keys are errors, so typos never fall back silently.
 
 ## Locations
 
@@ -110,11 +111,13 @@ Server-side provider keys are never used without a valid `pg_` key.
 
 Built-in presets: `openai`, `anthropic`, `gemini`, `gemini-native`,
 `cohere`, `groq`, `mistral`, `together`, `deepseek`, `openrouter`, `xai`,
-`ollama`. Each reads its server-side key from the usual variable
-(`OPENAI_API_KEY`, `GEMINI_API_KEY`, `CO_API_KEY`, …) and can be selected
-with `--provider` without any config. `gemini` uses Google's
-OpenAI-compatible endpoint, `gemini-native` the native `generateContent`
-API; both are priced from the same table.
+`kimi`, `ollama`. Each reads its server-side key from the usual variable
+(`OPENAI_API_KEY`, `GEMINI_API_KEY`, `CO_API_KEY`, `MOONSHOT_API_KEY`, …)
+and can be selected with `--provider` without any config. `gemini` uses
+Google's OpenAI-compatible endpoint, `gemini-native` the native
+`generateContent` API; both are priced from the same table. `kimi` is
+Moonshot AI's international API; for a key from the Chinese platform set
+`providers.kimi.base_url: https://api.moonshot.cn/v1`.
 
 ```yaml
 providers:

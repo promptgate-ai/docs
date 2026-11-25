@@ -12,8 +12,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-11-25
+
+The first minutes, made shorter. `promptgate start` on a fresh machine
+asks two things — which guardrails, and the web UI or not — and runs,
+because passing requests through needs no provider or key setup; the
+overview it opens with says where to point your apps. The installers
+show what they did and put PromptGate on your PATH, Homebrew installs
+it (`brew install promptgate-ai/tap/promptgate`), `promptgate config
+set` changes one setting without opening the file, `pause` and
+`resume` take PromptGate out of the way and back, and Kimi joins the
+providers. Nothing changes on the request path.
+
 ### Added
 
+- Provider preset `kimi`: Moonshot AI's Kimi models (OpenAI-compatible,
+  `MOONSHOT_API_KEY`), priced from the same LiteLLM table as the rest;
+  Claude Code and other Anthropic clients reach them through translation.
+- `promptgate config get|set|unset <path>` (and `config path`): one
+  setting at a time, like `git config` — `config set
+  limits.providers.openai 50/s`, values as YAML. Checked like `validate`
+  before it is written, comments kept, the previous file backed up, the
+  change recorded in the audit trail; a running gateway applies it.
+- `promptgate pause` and `resume`: pause sends connected coding agents
+  directly to their providers and stops the service; resume starts it,
+  waits until the gateway answers, then routes those agents through it
+  again.
+- A start page on the gateway's port: a browser opening
+  `http://127.0.0.1:7878` sees that PromptGate runs, a link to the web UI
+  and the base URLs; API clients still get JSON.
 - Homebrew: `brew install promptgate-ai/tap/promptgate` (macOS; the
   cask carries the Linux binaries too). The release workflow writes the
   cask after the binaries are uploaded, through a deploy key that can
@@ -23,6 +50,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The first `promptgate start` asks two things instead of six: which
+  guardrails (a ready-made level, or picked one by one in a checklist)
+  and whether to turn on the web UI (off unless you say yes). No
+  provider, API key, `pg_` key, agent or service questions: passing
+  requests through needs none of them, and `promptgate setup` still asks
+  all six. Then the screen clears and the overview opens with where to
+  point your apps. Menus answer to the arrow keys and Space; without a
+  terminal they take numbers.
+- Install scripts: the logo with the version and steps that say what
+  happened (downloaded, checksum verified, installed). `install.sh`
+  adds the install directory to your shell's profile when it isn't on
+  the PATH (zsh, bash, fish, or `~/.profile`; once;
+  `PROMPTGATE_NO_MODIFY_PATH` to skip); `install.ps1` also puts it on
+  the PATH of the running PowerShell. Both install the version
+  `version.json` names, so an install during a release never mixes two.
+- The logo shows above `promptgate`, `help` and every `--help` too (in a
+  terminal only), with an Akyros Labs line.
 - Docs: the guardrails, AI Gateway endpoints, end users, MCP gateway
   and API Gateway pages open with everything the feature can do and one
   config that uses all of it (each checked with `promptgate validate`).
@@ -197,5 +241,6 @@ bench/results.
 - [0.2.x](/changelog/v0-2/)
 - [0.1.x](/changelog/v0-1/)
 
-[Unreleased]: https://github.com/promptgate-ai/promptgate/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/promptgate-ai/promptgate/compare/v0.9.1...HEAD
+[0.9.1]: https://github.com/promptgate-ai/promptgate/compare/v0.9.0...v0.9.1
 [0.9.0]: https://github.com/promptgate-ai/promptgate/compare/v0.8.1...v0.9.0
