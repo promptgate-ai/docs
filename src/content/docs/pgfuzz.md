@@ -15,10 +15,22 @@ pgfuzz pii --target http://127.0.0.1:7878/v1/chat/completions \
    --report json
 ```
 
-Targets the PromptGate Go gateway (v0.3+): any `pg_` key, the OpenAI
-chat path, and a guardrail in `block` mode (refusals are 422). For the
+Targets the PromptGate Go gateway (v0.3+; `mcp` needs v0.7, `api` v0.8,
+`keywords --list` v0.9): any `pg_` key, the OpenAI chat path, and a
+guardrail in `block` mode (refusals are 422). For the
 archived Laravel v1, use `$PG_URL/api/$PG_UUID/v1/chat/completions` and
 a `pg_live_…` token.
+
+## Install
+
+```bash
+brew install promptgate-ai/tap/pgfuzz        # macOS, Linux
+```
+
+Or download the archive for your platform from
+`https://install.promptgate.dev/pgfuzz/<version>/` — for example
+`pgfuzz_v0.1.0_linux_amd64.tar.gz`, next to `checksums.txt` — or build it
+yourself (see [Build](#build)).
 
 ## Why
 
@@ -32,7 +44,7 @@ Uses cases:
 
 ## Status
 
-Phase 1 ships `pii`, `secrets`, `injection` and `keywords` recall tests, a `negatives` false-positive test, a `users` test of end-user limits and key policies, an `endpoints` test of AI Gateway endpoints, a `ui` test of the web UI's security, an `mcp` test of the MCP gateway and an `api` test of the API Gateway. Other categories (`budget`, `ratelimit`, `policy`, `load`) are on the backlog. The PromptGate repository runs a plan of all eight against every build (`scripts/pgfuzz-gate.sh`).
+Phase 1 ships `pii`, `secrets`, `injection` and `keywords` recall tests, a `negatives` false-positive test, a `users` test of end-user limits and key policies, an `endpoints` test of AI Gateway endpoints, a `ui` test of the web UI's security, an `mcp` test of the MCP gateway and an `api` test of the API Gateway. Other categories (`budget`, `ratelimit`, `policy`, `load`) are on the backlog. The PromptGate repository runs a plan of all of them — 26 stages — against every build (`scripts/pgfuzz-gate.sh`).
 
 ## Honest caveats
 
@@ -170,7 +182,7 @@ go build ./cmd/pgfuzz
 ./pgfuzz --version
 ```
 
-Pre-built binaries land on the GitHub release page on tag (darwin arm64+amd64, linux amd64+arm64, windows amd64).
+Releases (a tag `v*`) build darwin arm64+amd64, linux amd64+arm64 and windows amd64, publish them to install.promptgate.dev/pgfuzz/ and update the Homebrew cask.
 
 ## License
 

@@ -57,7 +57,7 @@ lowercase; a phrase starts with a word.
 
 ## Quality and speed
 
-Measured with [pgfuzz](https://github.com/promptgate-ai/pgfuzz)
+Measured with [pgfuzz](https://docs.promptgate.dev/pgfuzz/)
 (4,200 payloads of seven kinds in English and German — bare, inside a
 benign sentence, and lowercased with zero-width spaces): 100% caught.
 Over 3.4 MB of real code and docs, the only findings were documentation

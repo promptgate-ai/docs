@@ -12,6 +12,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Homebrew: `brew install promptgate-ai/tap/promptgate` (macOS; the
+  cask carries the Linux binaries too). The release workflow writes the
+  cask after the binaries are uploaded, through a deploy key that can
+  write to the tap only; on macOS the cask clears the download's
+  quarantine flag, since the binaries are signed with PromptGate's own
+  key, not notarized by Apple.
+
 ### Changed
 
 - Docs: the guardrails, AI Gateway endpoints, end users, MCP gateway
@@ -20,6 +29,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   New pages: operations (log, metrics, events, webhooks, audit,
   anomalies at a glance), MCP servers (server settings, protocol
   versions, local programs) and the pgfuzz quality gate.
+- Docs: the quality gate page lists all 26 stages (the MCP and API
+  Gateway stages were missing); links to pgfuzz go to its docs page.
 
 ## [0.9.0] - 2026-11-25
 

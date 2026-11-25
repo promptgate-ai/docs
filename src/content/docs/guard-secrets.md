@@ -49,7 +49,7 @@ source code 2.5 ms. Text crafted to wake every rule is cut off after
 50 ms + 0.25 ms per KB and reported as `incomplete_scan`: with `block`
 the request is refused, never passed unchecked.
 
-Measured with [pgfuzz](https://github.com/promptgate-ai/pgfuzz)
+Measured with [pgfuzz](https://docs.promptgate.dev/pgfuzz/)
 (1,400 synthetic secrets of seven kinds in code snippets): 100% caught.
 Run over 1.4 MB of real source code and docs: no false positives.
 

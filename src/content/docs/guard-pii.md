@@ -44,7 +44,7 @@ The built-in kinds are hand-written scanners rather than regular
 expressions: one pass jumps from digit to digit, and checksums weed out
 look-alikes such as order numbers, dates, versions and timestamps. A
 2 KB chat request takes 2.6 µs including the walk, 200 KB of prose
-0.16 ms. Measured with [pgfuzz](https://github.com/promptgate-ai/pgfuzz)
+0.16 ms. Measured with [pgfuzz](https://docs.promptgate.dev/pgfuzz/)
 (5,000 synthetic values of five kinds, inline and in Markdown or code
 blocks): 100% caught. Over 2.6 MB of real source code and docs, every
 finding was real data — author addresses, test card numbers,
