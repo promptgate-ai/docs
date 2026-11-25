@@ -83,7 +83,7 @@ styles, no framing, forms only to the UI. Further headers:
 no-store`; assets have content-hashed names and are cached for a year.
 
 Every build checks the UI from the outside with
-[pgfuzz](/guardrails/#quality-gate): 232 attacks on access, CSRF,
+[pgfuzz](/quality-gate/): 232 attacks on access, CSRF,
 sign-in, headers and reflected markup, all of which must fail.
 
 ## Configuration

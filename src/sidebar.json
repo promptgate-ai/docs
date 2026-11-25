@@ -79,6 +79,9 @@
       },
       {
         "slug": "guard-lists"
+      },
+      {
+        "slug": "quality-gate"
       }
     ]
   },

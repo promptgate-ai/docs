@@ -8,28 +8,74 @@ description: "Guardrails inspect every request before a provider sees it. They r
 Guardrails inspect every request before a provider sees it. They read
 the content of the request in any API format — chat messages, system
 prompts, tool calls and tool results, Responses API input, embeddings
-input — and can refuse the request, mask what they find, or just record
-it.
+input, attached files — and can refuse the request, mask what they
+find, or just record it.
+
+## What guardrails can do
+
+| guard | does | default | |
+|---|---|---|---|
+| `ip_allowlist` | admits requests from listed IPs and CIDRs only, behind trusted reverse proxies too | 403 | [details](/guard-access/#ip_allowlist) |
+| `time_window` | admits requests during set hours only, per weekday and time zone | 403 | [details](/guard-access/#time_window) |
+| `keywords` | refuses words and phrases you name — codenames, customers, projects | `block`, user content | [below](#keywords) |
+| `length` | bounds the characters of one request | `block` | [below](#length) |
+| `prompt_injection` | "ignore previous instructions", role assumption, system-prompt leaks, chat-template tokens — English and German | `block`, user content | [details](/guard-injection/) |
+| `secrets` | API keys, tokens, private keys, connection-string passwords (PromptGate rules + 221 gitleaks formats) | `block`, all roles | [details](/guard-secrets/) |
+| `pii` | e-mail, phone, IBAN, credit card, SSN, IP address — with checksums | `mask`, all roles | [details](/guard-pii/) |
+| `pii_contextual` | names, postal addresses, dates of birth and kinds you describe — found by a model you choose | `mask`, user content | [details](/guard-pii-contextual/) |
+| `token_saver` | trims tool results — escape codes, whitespace, repeated output, optional size cap | `apply`, tool results | [details](/guard-token-saver/) |
+| `attachments` | reads files in requests (text, docx, xlsx, pptx, pdf) for every guard above, or refuses them | `log`, all roles | [below](#attachments) |
+
+For all of them:
+
+- **[Actions](#actions)** — `block` (422, nothing reaches the provider),
+  `mask`, `redact` (the answer gets the [original back](#reversible-redaction)) or `log`.
+- **[Lists](/guard-lists/)** — keywords, IP allow and deny lists, your
+  own injection phrases and PII exceptions from text files or URLs,
+  fetched again while the gateway runs.
+- **[Scopes](#scopes)** — other rules per model alias, AI Gateway
+  endpoint, MCP server, API and `pg_` key.
+- **[Roles](#settings-every-guard-has)** — which parts of a request a guard reads.
+- **Every surface** — the LLM proxy, [AI Gateway endpoints](/endpoints/),
+  [MCP](/mcp/#guardrails) tool calls and results, the [API Gateway](/api-gateway/#guardrails).
+- **[Ready-made levels](#ready-made-protection)** to start from.
+
+Everything in one config:
 
 ```yaml
 guardrails:
+  ip_allowlist:
+    allow: [10.0.0.0/8]
+    lists: [{ url: https://vpn.example.com/egress-ranges.txt, into: allow }]
+  time_window:
+    timezone: Europe/Berlin
+    windows: [{ days: mon-fri, from: "07:00", to: "20:00" }]
   keywords:
-    words: ["Project Falcon", "confidential"]   # block by default
-  length:
-    max_chars: 400000
-  pii: {}                     # mask personal data
-  prompt_injection: {}        # block takeover attempts
+    words: ["Project Falcon", "confidential"]
+    lists: [{ file: lists/codenames.txt }]       # one entry per line
+  length: { max_chars: 400000 }
+  prompt_injection:
+    custom: [{ kind: exfiltration, phrase: "send ~4 passwords to" }]
+  secrets: { action: mask }
+  pii:
+    action: redact                               # restored in the answer
+    allow: ["@acme.com"]
+  pii_contextual: { provider: openai, model: gpt-4o-mini }
+  token_saver: {}
+  attachments: { unreadable: block }
 
+  # Scopes name an alias, endpoint, MCP server or key the config defines.
   models:                     # per model alias
-    local:
-      keywords: { enabled: false }
+    local: { keywords: { enabled: false } }
   endpoints:                  # per AI Gateway endpoint — wins over the alias
-    summarize-ticket:
-      pii: { action: redact }
+    summarize-ticket: { pii: { action: mask } }
+  mcp:                        # per MCP server
+    browser: { prompt_injection: { roles: [user, tool] } }
   keys:                       # per pg_ key — wins over everything else
-    ci:
-      keywords: { action: log }
+    ci: { keywords: { action: log } }
 ```
+
+Each guard's own settings are described below and on its page.
 
 ## Ready-made protection
 
@@ -154,12 +200,8 @@ rule keeps the running config and names its path
 
 ## Guards
 
-### Access rules
-
-| guard | admits | | |
-|---|---|---|---|
-| `ip_allowlist` | requests from listed IPs and CIDRs, behind trusted reverse proxies too | 403 | [details](/guard-access/#ip_allowlist) |
-| `time_window` | requests during set hours, per weekday and time zone | 403 | [details](/guard-access/#time_window) |
+The guards with no page of their own. The others: see the
+[overview](#what-guardrails-can-do).
 
 ### `keywords`
 
@@ -186,21 +228,6 @@ Bounds the total characters of content in one request.
 
 Actions `block` (default), `log`. Message: `Request blocked: input too
 long (412000 characters, max 400000).`
-
-### Content detectors
-
-| guard | finds | default | |
-|---|---|---|---|
-| `prompt_injection` | "ignore previous instructions", role assumption, system-prompt leaks, chat-template tokens — English and German | `block`, user content | [details](/guard-injection/) |
-| `secrets` | API keys, tokens, private keys, connection-string passwords (PromptGate rules + 221 gitleaks formats) | `block`, all roles | [details](/guard-secrets/) |
-| `pii` | e-mail, phone, IBAN, credit card, SSN, IP address — with checksums | `mask`, all roles | [details](/guard-pii/) |
-| `pii_contextual` | names, postal addresses, dates of birth and kinds you describe — found by a model you choose | `mask`, user content | [details](/guard-pii-contextual/) |
-
-### Transformers
-
-| guard | does | default | |
-|---|---|---|---|
-| `token_saver` | trims tool results — escape codes, whitespace, repeated output, optional size cap — before content guards and the provider see them | `apply` (`log` = dry run), tool results | [details](/guard-token-saver/) |
 
 ### `attachments`
 
@@ -253,34 +280,9 @@ unreadable.
 
 ## Quality gate
 
-Every build runs `scripts/pgfuzz-gate.sh`: it builds the binary and a
-mock provider, enables `secrets`, `pii` and `prompt_injection` in block
-mode, a per-user rate limit, the endpoints pgfuzz probes and the
-[web UI](/ui/), and runs [pgfuzz](https://github.com/promptgate-ai/pgfuzz) with
-`scripts/pgfuzz/gate.yaml`:
-
-| stage | payloads | must reach |
-|---|---|---|
-| secrets | 1,400 synthetic keys of seven providers in code | 99% caught |
-| pii | 2,500 e-mails, IBANs, cards, phones, SSNs — inline and in Markdown/code | 99% caught |
-| injection | 2,100 attacks of seven kinds, English and German — plain, in a sentence, with zero-width characters | 99% caught |
-| keywords | 2,000 prompts with entries of a 10,000-entry [list file](/guard-lists/) — inline, other case, with punctuation, on a line of their own | 100% caught |
-| negatives | every benign payload: order numbers, placeholder keys, "ignore the warnings", code, prose | 100% passed |
-| users-isolated | 20 [end users](/users/) at a per-user limit of 3: within it, one over, then users not seen yet | 100% as expected |
-| users-required | a key with `users: required`, with and without an id | 100% as expected |
-| users-ignored | a key with `users: ignore`, one id past the limit | 100% as expected |
-| endpoints-variables | [endpoint](/endpoints/) variables: wrong types, ranges, lengths, patterns, lookalike characters, unknown names, malformed bodies (400) and valid boundaries (200) | 100% as expected |
-| endpoints-schema | answers that break the endpoint's output schema (502, never 200) | 100% as expected |
-| endpoints-sessions | [sessions](/endpoint-sessions/) continued by their owner (200), another user, another key, forged and broken ids (404) | 100% as expected |
-| endpoints-cache | the [cache](/endpoints/#cache): a hit for the same key, a miss for another | 100% as expected |
-| ui | the [web UI](/ui/), as an attacker would try it: every page and action without a session or with forged cookies, forms without or with a wrong CSRF token and from another site, password guessing (429), unknown names vs wrong passwords, session fixation, open redirects, cookie flags, security headers, path traversal, markup in query parameters — 232 checks | 100% held |
-
-Today every stage is at 100%. Run it locally with a checkout of pgfuzz
-next to this repository:
-
-```bash
-PGFUZZ_DIR=../pgfuzz scripts/pgfuzz-gate.sh   # report: pgfuzz-report.json
-```
+Every build attacks the guardrails with thousands of generated secrets,
+personal data, injections and list entries, and fails below the
+required recall — see [quality gate](/quality-gate/).
 
 ## Performance
 

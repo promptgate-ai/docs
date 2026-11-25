@@ -216,7 +216,7 @@ user gets a new hash.
 
 Every build checks this behaviour with pgfuzz: per-user limits isolate
 users, `required` keys reject requests without an id, and `ignore` keys
-never limit ids ([quality gate](/guardrails/#quality-gate)).
+never limit ids ([quality gate](/quality-gate/)).
 
 Reading the id costs about 30 ns from the header. From the body it costs
 nothing extra, because the same pass over the body already reads `model`.

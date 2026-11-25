@@ -12,6 +12,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Docs: the guardrails page opens with everything guardrails can do —
+  every guard, actions, lists, scopes, roles and surfaces — and one
+  config that uses them all; the pgfuzz quality gate moved to its own
+  page.
+
 ## [0.9.0] - 2026-11-25
 
 The operations release, and the one to start with: `promptgate start`
