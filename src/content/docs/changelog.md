@@ -12,6 +12,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.2] - 2026-11-26
+
+One more question on the first start, so PromptGate can stay running:
+after the guardrails and the web UI, `promptgate start` asks whether to
+run in the background, and a yes leaves a service behind instead of a
+terminal window. Nothing changes on the request path.
+
+### Added
+
+- The first `promptgate start` asks a third question: run PromptGate
+  in the background (default no). Yes installs and starts the service
+  with the variables the config uses, waits for it to answer and shows
+  the same overview — where to point your apps, the web UI and its
+  first sign-in — on a clean screen
+  ([first start](/install/#first-start)).
+
 ## [0.9.1] - 2026-11-25
 
 The first minutes, made shorter. `promptgate start` on a fresh machine
@@ -241,6 +257,7 @@ bench/results.
 - [0.2.x](/changelog/v0-2/)
 - [0.1.x](/changelog/v0-1/)
 
-[Unreleased]: https://github.com/promptgate-ai/promptgate/compare/v0.9.1...HEAD
+[Unreleased]: https://github.com/promptgate-ai/promptgate/compare/v0.9.2...HEAD
+[0.9.2]: https://github.com/promptgate-ai/promptgate/compare/v0.9.1...v0.9.2
 [0.9.1]: https://github.com/promptgate-ai/promptgate/compare/v0.9.0...v0.9.1
 [0.9.0]: https://github.com/promptgate-ai/promptgate/compare/v0.8.1...v0.9.0

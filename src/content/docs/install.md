@@ -76,7 +76,7 @@ all URLs.
 promptgate start
 ```
 
-Without a config, `start` in a terminal asks two things and runs. Enter
+Without a config, `start` in a terminal asks three things and runs. Enter
 takes the suggestion; the arrow keys move, Space ticks:
 
 1. **Guardrails**: a ready-made level ([protection](/guardrails/#ready-made-protection)),
@@ -84,6 +84,11 @@ takes the suggestion; the arrow keys move, Space ticks:
    `prompt_injection`, `token_saver` and `attachments` one by one.
 2. **Web UI**: off unless you turn it on. Later: `promptgate start --ui
    127.0.0.1:7879` or `ui.enabled: true`.
+3. **Background**: no by default — PromptGate runs in this terminal
+   until Ctrl-C. Yes installs it as a service (as `promptgate install`
+   does, with the variables the config uses): it starts at login, keeps
+   running without the terminal, and the overview below says "runs in
+   the background". `promptgate pause` takes it out of the way.
 
 Passing requests through needs nothing else: apps send their own
 provider key, and the model name picks the provider (`openai:gpt-5`,
@@ -103,9 +108,9 @@ Point your apps here:
 ```
 
 `pg_` keys for your apps with a daily budget, sending Claude Code and
-Codex through PromptGate, and the background service come with
-`promptgate setup` — six questions — or one at a time: `promptgate keys
-create`, `promptgate connect claude-code`, `promptgate install`. `setup
+Codex through PromptGate come with `promptgate setup` — six questions,
+the background service among them — or one at a time: `promptgate keys
+create`, `promptgate connect claude-code`. `setup
 --yes` asks nothing (flags `--protection`, `--budget`, `--connect
 claude-code,codex`, `--service`).
 
