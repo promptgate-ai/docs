@@ -13,7 +13,11 @@ Additional Use Grant: You may make production use of the Licensed Work,
                       embedded basis in order to compete with Akyros
                       Labs' paid product or service whose value derives
                       substantially from the Licensed Work's gateway,
-                      routing, or observability functionality.
+                      routing, or observability functionality, or from
+                      central configuration and management of multiple
+                      instances of the Licensed Work (for example
+                      distributing configurations to them, or monitoring
+                      or auditing them in one place).
 
 Change Date:          Four years from the date the Licensed Work is published
 
